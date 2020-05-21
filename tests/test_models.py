@@ -60,5 +60,26 @@ def test_user_get_own_fleets(db_test):
     db_test.session.add(user)
     db_test.session.commit()
 
-    newsfeed = user.get_fleets()
-    assert newsfeed == [f3, f2, f1]
+    own_fleets = user.get_fleets(following=False)
+    assert own_fleets.all() == [f3, f2, f1]
+
+
+def test_user_get_newsfeed(db_test):
+    me = User(username='me')
+    my_fleet = Fleet(post='DO NOT TAKE THAT HELI Kobe', user=me,
+                     created_at=datetime(2020, 1, 26, 9, 00, 00, 0))
+    ariana = User(username='ArianaGrande')
+    ariana_fleet = Fleet(post='sending love. be safe.', user=ariana,
+                         created_at=datetime(2020, 3, 12, 15, 12, 00, 0))
+    trump = User(username='realDonaldTrump')
+    trump_fleet = Fleet(post='Despite the constant negative press covfefe',
+                        user=trump,
+                        created_at=datetime(2017, 5, 31, 0, 6, 00, 0))
+    db_test.session.add_all([me, ariana, trump])
+    db_test.session.commit()
+    follow = Follow(follower_id=me.id, followee_id=ariana.id)
+    db_test.session.add(follow)
+    db_test.session.commit()
+
+    news_feed = me.get_fleets(following=True)
+    assert news_feed.all() == [ariana_fleet, my_fleet]

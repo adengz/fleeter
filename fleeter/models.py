@@ -34,22 +34,38 @@ class User(db.Model):
         return f'<User @{self.username}>'
 
     def is_following(self, other: User) -> bool:
+        """Checks whether current user is following the other user."""
         assert self != other
         follow = self.following.filter_by(id=other.id).one_or_none()
         return follow is not None
 
     def follow(self, other: User) -> None:
+        """Follows the other user if not currently following"""
         if not self.is_following(other):
             self.following.append(other)
 
     def unfollow(self, other: User) -> None:
+        """Unfollows the other user if currently following"""
         if self.is_following(other):
             self.following.remove(other)
 
-    def get_fleets(self, page=1, per_page=10):
-        fleets = Fleet.query.filter_by(user_id=self.id). \
-            order_by(Fleet.created_at.desc())
-        return fleets.paginate(page=page, per_page=per_page).items
+    def get_fleets(self, following: bool = False):
+        """
+        Fetches fleets of a user and (optionally) his/her following.
+
+        Args:
+            following: Whether including following.
+
+        Returns:
+            A Query object of fleets sorted in reverse chronological order.
+        """
+        fleets = Fleet.query.filter_by(user_id=self.id)
+        if following:
+            others = Fleet.query\
+                .join(Follow, (Follow.followee_id == Fleet.user_id))\
+                .filter(Follow.follower_id == self.id)
+            fleets = fleets.union(others)
+        return fleets.order_by(Fleet.created_at.desc())
 
 
 class Fleet(db.Model):
