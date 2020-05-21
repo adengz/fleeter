@@ -1,8 +1,10 @@
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_cors import CORS
 
 db = SQLAlchemy()
+migrate = Migrate()
 
 
 def create_app(config='config.Config'):
@@ -10,6 +12,7 @@ def create_app(config='config.Config'):
     app.config.from_object(config)
 
     db.init_app(app)
+    migrate.init_app(app, db)
     CORS(app)
 
     @app.after_request

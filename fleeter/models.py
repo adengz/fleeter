@@ -1,21 +1,7 @@
 from fleeter import db
 
 
-class Model(db.Model):
-
-    def insert(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def update(self):
-        db.session.commit()
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
-
-class User(Model):
+class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -24,17 +10,17 @@ class User(Model):
                             cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f'<@{self.username}>'
+        return f'<User @{self.username}>'
 
 
-class Fleet(Model):
+class Fleet(db.Model):
     __tablename__ = 'fleets'
 
     id = db.Column(db.Integer, primary_key=True)
     post = db.Column(db.String(140), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('User.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     def __repr__(self):
-        return f'<@{self.user.username} at {self.created_at}' \
-               f' wrote "{self.post}">'
+        return f'<Fleet "{self.post}" by ' \
+               f'@{self.user.username} at {self.created_at}>'
