@@ -1,6 +1,16 @@
 from fleeter import db
 
 
+class Follow(db.Model):
+    __tablename__ = 'follow'
+
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    followee_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    created_at = db.Column(db.DateTime, nullable=False)
+
+
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -8,6 +18,10 @@ class User(db.Model):
     username = db.Column(db.String(15), nullable=False, unique=True)
     fleet = db.relationship('Fleet', backref='user',
                             cascade='all, delete-orphan')
+    following = db.relationship('User', secondary='follow',
+                                primaryjoin=(Follow.follower_id == id),
+                                secondaryjoin=(Follow.followee_id == id),
+                                backref='followers', cascade='all')
 
     def __repr__(self):
         return f'<User @{self.username}>'
