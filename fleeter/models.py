@@ -12,6 +12,11 @@ class User(db.Model):
     def __repr__(self):
         return f'<User @{self.username}>'
 
+    def get_fleets(self, page=1, per_page=10):
+        fleets = Fleet.query.filter_by(user_id=self.id). \
+            order_by(Fleet.created_at.desc())
+        return fleets.paginate(page=page, per_page=per_page).items
+
 
 class Fleet(db.Model):
     __tablename__ = 'fleets'
