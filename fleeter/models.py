@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import func
 from fleeter import db
 
@@ -30,6 +32,19 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User @{self.username}>'
+
+    def is_following(self, other: User) -> bool:
+        assert self != other
+        follow = self.following.filter_by(id=other.id).one_or_none()
+        return follow is not None
+
+    def follow(self, other: User) -> None:
+        if not self.is_following(other):
+            self.following.append(other)
+
+    def unfollow(self, other: User) -> None:
+        if self.is_following(other):
+            self.following.remove(other)
 
     def get_fleets(self, page=1, per_page=10):
         fleets = Fleet.query.filter_by(user_id=self.id). \
