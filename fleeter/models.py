@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from fleeter import db
 
 
@@ -8,7 +9,8 @@ class Follow(db.Model):
                             primary_key=True)
     followee_id = db.Column(db.Integer, db.ForeignKey('users.id'),
                             primary_key=True)
-    created_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.TIMESTAMP(timezone=True), nullable=False,
+                           server_default=func.now())
 
 
 class User(db.Model):
@@ -18,10 +20,13 @@ class User(db.Model):
     username = db.Column(db.String(15), nullable=False, unique=True)
     fleet = db.relationship('Fleet', backref='user',
                             cascade='all, delete-orphan')
-    following = db.relationship('User', secondary='follow',
-                                primaryjoin=(Follow.follower_id == id),
-                                secondaryjoin=(Follow.followee_id == id),
-                                backref='followers', cascade='all')
+    following = db.relationship(
+        'User', secondary='follow',
+        primaryjoin=(Follow.follower_id == id),
+        secondaryjoin=(Follow.followee_id == id),
+        backref=db.backref('followers', lazy='dynamic'),
+        cascade='all', lazy='dynamic'
+    )
 
     def __repr__(self):
         return f'<User @{self.username}>'
@@ -37,7 +42,8 @@ class Fleet(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     post = db.Column(db.String(140), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.TIMESTAMP(timezone=True), nullable=False,
+                           server_default=func.now())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     def __repr__(self):
