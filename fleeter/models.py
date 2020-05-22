@@ -19,7 +19,8 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(15), nullable=False, unique=True)
+    username = db.Column(db.String(15), index=True,
+                         nullable=False, unique=True)
     fleet = db.relationship('Fleet', backref='user',
                             cascade='all, delete-orphan')
     following = db.relationship(
@@ -73,8 +74,8 @@ class Fleet(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     post = db.Column(db.String(140), nullable=False)
-    created_at = db.Column(db.TIMESTAMP(timezone=True), nullable=False,
-                           server_default=func.now())
+    created_at = db.Column(db.TIMESTAMP(timezone=True), index=True,
+                           nullable=False, server_default=func.now())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     def __repr__(self):
