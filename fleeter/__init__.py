@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -23,28 +23,10 @@ def create_app(config='config.Config'):
                              'GET,POST,PATCH,DELETE,OPTIONS')
         return response
 
-    @app.errorhandler(400)
-    def bad_request(error):
-        return jsonify({'success': False,
-                        'error': 400,
-                        'message': 'Bad request'}), 400
+    from fleeter.error_handlers import bp as errors_bp
+    app.register_blueprint(errors_bp)
 
-    @app.errorhandler(404)
-    def not_found(error):
-        return jsonify({'success': False,
-                        'error': 404,
-                        'message': 'Not found'}), 404
-
-    @app.errorhandler(422)
-    def unprocessable(error):
-        return jsonify({'success': False,
-                        'error': 422,
-                        'message': 'Unprocessable'}), 422
-
-    @app.errorhandler(500)
-    def internal_server_error(error):
-        return jsonify({'success': False,
-                        'error': 500,
-                        'message': 'Internal server error'}), 500
+    from fleeter.api import bp as api_bp
+    app.register_blueprint(api_bp)
 
     return app
