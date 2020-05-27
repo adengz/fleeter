@@ -19,10 +19,10 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(15), index=True,
+    username = db.Column(db.String(30), index=True,
                          nullable=False, unique=True)
     fleet = db.relationship('Fleet', backref='user',
-                            cascade='all, delete-orphan')
+                            cascade='all, delete-orphan', lazy='dynamic')
     following = db.relationship(
         'User', secondary='follow',
         primaryjoin=(Follow.follower_id == id),
@@ -33,6 +33,12 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User @{self.username}>'
+
+    def to_dict(self):
+        return {'id': self.id, 'username': self.username,
+                'fleets': self.fleet.count(),
+                'following': self.following.count(),
+                'followers': self.followers.count()}
 
     def is_following(self, other: User) -> bool:
         """Checks whether current user is following the other user."""
@@ -60,7 +66,7 @@ class User(db.Model):
         Returns:
             A Query object of fleets sorted in reverse chronological order.
         """
-        fleets = Fleet.query.filter_by(user_id=self.id)
+        fleets = self.fleet
         if following:
             others = Fleet.query\
                 .join(Follow, (Follow.followee_id == Fleet.user_id))\
@@ -73,7 +79,7 @@ class Fleet(db.Model):
     __tablename__ = 'fleets'
 
     id = db.Column(db.Integer, primary_key=True)
-    post = db.Column(db.String(140), nullable=False)
+    post = db.Column(db.String(280), nullable=False)
     created_at = db.Column(db.TIMESTAMP(timezone=True), index=True,
                            nullable=False, server_default=func.now())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -81,3 +87,8 @@ class Fleet(db.Model):
     def __repr__(self):
         return f'<Fleet "{self.post}" by ' \
                f'@{self.user.username} at {self.created_at}>'
+
+    def to_dict(self):
+        return {'id': self.id, 'post': self.post,
+                'username': self.user.username,
+                'created_at': str(self.created_at)}
