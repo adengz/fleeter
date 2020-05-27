@@ -24,6 +24,11 @@ def app():
 
 
 @pytest.fixture(scope='module')
+def client(app):
+    return app.test_client()
+
+
+@pytest.fixture(scope='module')
 def connection(app):
     engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
     connection = engine.connect()

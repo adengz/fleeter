@@ -8,6 +8,8 @@ class Config(object):
     TESTING = False
     SQLALCHEMY_DATABASE_URI = f'postgresql://{LOCAL_DB_CONN}/{DB_NAME}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    FLEETS_PER_PAGE = 10
+    USERS_PER_PAGE = 2
 
 
 class TestingConfig(Config):
