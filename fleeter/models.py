@@ -21,9 +21,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(30), index=True,
                          nullable=False, unique=True)
-    fleet = db.relationship('Fleet', order_by='Fleet.created_at.desc()',
-                            backref='user', cascade='all, delete-orphan',
-                            lazy='dynamic')
+    fleets = db.relationship('Fleet', order_by='Fleet.created_at.desc()',
+                             backref='user', cascade='all, delete-orphan',
+                             lazy='dynamic')
     following = db.relationship(
         'User', secondary='follow',
         primaryjoin=(Follow.follower_id == id),
@@ -39,7 +39,7 @@ class User(db.Model):
 
     def to_dict(self):
         return {'id': self.id, 'username': self.username,
-                'total_fleets': self.fleet.count(),
+                'total_fleets': self.fleets.count(),
                 'following': self.following.count(),
                 'followers': self.followers.count()}
 
@@ -70,12 +70,12 @@ class User(db.Model):
             A Query object of fleets sorted in reverse chronological order.
         """
         if not following:
-            return self.fleet
+            return self.fleets
         else:
             others = Fleet.query\
                 .join(Follow, (Follow.followee_id == Fleet.user_id))\
                 .filter(Follow.follower_id == self.id)
-            return self.fleet.union(others).order_by(Fleet.created_at.desc())
+            return self.fleets.union(others).order_by(Fleet.created_at.desc())
 
 
 class Fleet(db.Model):
