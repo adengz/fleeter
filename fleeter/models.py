@@ -35,7 +35,7 @@ class User(db.Model):
     )
 
     def __repr__(self):
-        return f'<User @{self.username}>'
+        return f'<User {self.username}>'
 
     def to_dict(self):
         return {'id': self.id, 'username': self.username,
@@ -89,7 +89,7 @@ class Fleet(db.Model):
 
     def __repr__(self):
         return f'<Fleet "{self.post}" by ' \
-               f'@{self.user.username} at {self.created_at}>'
+               f'{self.user.username} at {self.created_at}>'
 
     def to_dict(self):
         return {'id': self.id, 'post': self.post,

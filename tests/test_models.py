@@ -27,6 +27,19 @@ def test_user_to_dict(session):
     assert ron_dict['followers'] == 1
 
 
+def test_user_following_followers(session):
+    tracey = User.query.filter_by(username='Tracey De Santa').first()
+    tracey_following = [u.username for u in tracey.following.all()]
+    assert tracey_following == ['Jimmy De Santa', 'Michael De Santa',
+                                'Amanda De Santa']
+
+    simeon = User.query.filter_by(username='Simeon Yetarian').first()
+    simeon_followers = [u.username for u in simeon.followers.all()]
+    assert simeon_followers == ['Owen Yates', 'Barbara Watkins',
+                                'Yerghat Tankian', 'Sacha Yetarian',
+                                'Anak Horozian']
+
+
 def test_user_follow(session):
     franklin = User.query.filter_by(username='Franklin Clinton').first()
     lamar = User.query.filter_by(username='Lamar Davis').first()
