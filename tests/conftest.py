@@ -21,10 +21,11 @@ def db(app):
 
 @pytest.fixture(scope='function')
 def session(db):
-    db.create_all()
+    db.session.begin_nested()
 
     yield db.session
 
+    # Rollback any transactions
+    db.session.rollback()
     # Explicitly close DB session
     db.session.close()
-    db.drop_all()

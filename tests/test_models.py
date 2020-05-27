@@ -1,76 +1,79 @@
-from datetime import datetime, timedelta
 from fleeter.models import User, Fleet
 
 
 def test_follow(session):
-    user1 = User(username='john')
-    user2 = User(username='jane')
-    session.add_all([user1, user2])
-    session.commit()
+    franklin = User.query.filter_by(username='Franklin Clinton').first()
+    lamar = User.query.filter_by(username='Lamar Davis').first()
+    assert lamar not in franklin.following.all()
+    assert franklin not in lamar.followers.all()
+    franklin.follow(lamar)
+    assert lamar in franklin.following.all()
+    assert franklin in lamar.followers.all()
 
-    assert user1.following.all() == []
-    assert user2.followers.all() == []
-
-    user1.follow(user2)
-    assert user2 in user1.following.all()
-    assert user1 in user2.followers.all()
+    michael = User.query.filter_by(username='Michael De Santa').first()
+    jimmy = User.query.filter_by(username='Jimmy De Santa').first()
+    assert jimmy not in michael.following.all()
+    assert michael not in jimmy.followers.all()
+    michael.follow(jimmy)
+    assert jimmy in michael.following.all()
+    assert michael in jimmy.followers.all()
 
 
 def test_unfollow(session):
-    user1 = User(username='john')
-    user2 = User(username='jane')
-    session.add_all([user1, user2])
-    session.commit()
-    user1.following.append(user2)
-    session.commit()
+    lamar = User.query.filter_by(username='Lamar Davis').first()
+    stretch = User.query.filter_by(username='Harold Stretch Joseph').first()
+    assert lamar.is_following(stretch)
+    lamar.unfollow(stretch)
+    assert stretch not in lamar.following.all()
+    assert lamar not in stretch.followers.all()
 
-    assert user1.is_following(user2)
-
-    user1.unfollow(user2)
-    assert user2 not in user1.following.all()
-    assert user1 not in user2.followers.all()
+    kyle = User.query.filter_by(username='Kyle Chavis').first()
+    amanda = User.query.filter_by(username='Amanda De Santa').first()
+    assert kyle.is_following(amanda)
+    kyle.unfollow(amanda)
+    assert amanda not in kyle.following.all()
+    assert kyle not in amanda.followers.all()
 
 
 def test_user_get_own_fleets(session):
-    user = User(username='john')
-    now = datetime.now()
-    f1 = Fleet(post='first fleet', user=user,
-               created_at=(now + timedelta(seconds=1)))
-    f2 = Fleet(post='second fleet', user=user,
-               created_at=(now + timedelta(seconds=2)))
-    f3 = Fleet(post='third fleet', user=user,
-               created_at=(now + timedelta(seconds=3)))
-    session.add(user)
-    session.commit()
+    devin = User.query.filter_by(username='Devin Weston').first()
+    devin_fleets = devin.get_fleets(following=False).all()
+    assert len(devin_fleets) == 5
+    assert set([f.user for f in devin_fleets]) == {devin}
+    assert 'Meltdown' in devin_fleets[0].post
+    assert sorted(devin_fleets, key=lambda f: f.created_at, reverse=True) \
+           == devin_fleets
 
-    own_fleets = user.get_fleets(following=False)
-    assert own_fleets.all() == [f3, f2, f1]
+    lester = User.query.filter_by(username='Lester Crest').first()
+    lester_fleets = lester.get_fleets(following=False).all()
+    assert len(lester_fleets) == 9
+    assert set([f.user for f in lester_fleets]) == {lester}
+    assert 'Lifeinvader' in lester_fleets[-1].post
+    assert sorted(lester_fleets, key=lambda f: f.created_at, reverse=True) \
+           == lester_fleets
+
+    wade = User.query.filter_by(username='Wade Herbert').first()
+    wade_fleets = wade.get_fleets(following=False).all()
+    assert len(wade_fleets) == 2
+    assert set([f.user for f in wade_fleets]) == {wade}
+    assert 'Los Santos' in wade_fleets[-1].post
+    assert sorted(wade_fleets, key=lambda f: f.created_at, reverse=True) \
+           == wade_fleets
 
 
 def test_user_get_newsfeed(session):
-    users = {}
-    for name in ['mike', 'susan', 'david', 'karen']:
-        users[name] = User(username=name)
-    session.add_all(users.values())
-    session.commit()
-    users['susan'].following.append(users['mike'])
-    users['susan'].following.append(users['karen'])
-    users['david'].following.append(users['mike'])
-    users['karen'].following.append(users['mike'])
-    users['karen'].following.append(users['david'])
-    users['karen'].following.append(users['susan'])
-    now = datetime.now()
-    f1 = Fleet(post='fleet by mike', user=users['mike'],
-               created_at=(now + timedelta(seconds=1)))
-    f2 = Fleet(post='fleet by david', user=users['david'],
-               created_at=(now + timedelta(seconds=2)))
-    f3 = Fleet(post='fleet by karen', user=users['karen'],
-               created_at=(now + timedelta(seconds=3)))
-    f4 = Fleet(post='fleet by susan', user=users['susan'],
-               created_at=(now + timedelta(seconds=4)))
-    session.commit()
+    tanisha = User.query.filter_by(username='Tanisha Jackson').first()
+    tanisha_newsfeed = tanisha.get_fleets(following=True).all()
+    all_tanisha_fleets = []
+    for user in [tanisha] + tanisha.following.all():
+        all_tanisha_fleets.extend(Fleet.query.filter_by(user_id=user.id))
+    all_tanisha_fleets.sort(key=lambda f: f.created_at, reverse=True)
+    assert all_tanisha_fleets == tanisha_newsfeed
 
-    assert users['mike'].get_fleets(following=True).all() == [f1]
-    assert users['susan'].get_fleets(following=True).all() == [f4, f3, f1]
-    assert users['david'].get_fleets(following=True).all() == [f2, f1]
-    assert users['karen'].get_fleets(following=True).all() == [f4, f3, f2, f1]
+    kyle = User.query.filter_by(username='Kyle Chavis').first()
+    kyle_newsfeed = kyle.get_fleets(following=True).all()
+    all_kyle_fleets = []
+    for user in [kyle] + kyle.following.all():
+        all_kyle_fleets.extend(Fleet.query.filter_by(user_id=user.id))
+    all_kyle_fleets.sort(key=lambda f: f.created_at, reverse=True)
+    assert all_kyle_fleets == kyle_newsfeed
