@@ -6,7 +6,7 @@ def test_user_to_dict(session):
     lamar_dict = lamar.to_dict()
     assert lamar_dict['id'] == 3
     assert lamar_dict['username'] == 'Lamar Davis'
-    assert lamar_dict['fleets'] == 6
+    assert lamar_dict['total_fleets'] == 6
     assert lamar_dict['following'] == 4
     assert lamar_dict['followers'] == 9
 
@@ -14,7 +14,7 @@ def test_user_to_dict(session):
     jimmy_dict = jimmy.to_dict()
     assert jimmy_dict['id'] == 14
     assert jimmy_dict['username'] == 'Jimmy De Santa'
-    assert jimmy_dict['fleets'] == 20
+    assert jimmy_dict['total_fleets'] == 20
     assert jimmy_dict['following'] == 3
     assert jimmy_dict['followers'] == 3
 
@@ -22,7 +22,7 @@ def test_user_to_dict(session):
     ron_dict = ron.to_dict()
     assert ron_dict['id'] == 26
     assert ron_dict['username'] == 'Ron Jakowski'
-    assert ron_dict['fleets'] == 0
+    assert ron_dict['total_fleets'] == 0
     assert ron_dict['following'] == 1
     assert ron_dict['followers'] == 1
 
@@ -33,6 +33,7 @@ def test_user_follow(session):
     assert lamar not in franklin.following.all()
     assert franklin not in lamar.followers.all()
     franklin.follow(lamar)
+    session.commit()
     assert lamar in franklin.following.all()
     assert franklin in lamar.followers.all()
 
@@ -41,6 +42,7 @@ def test_user_follow(session):
     assert jimmy not in michael.following.all()
     assert michael not in jimmy.followers.all()
     michael.follow(jimmy)
+    session.commit()
     assert jimmy in michael.following.all()
     assert michael in jimmy.followers.all()
 
@@ -50,6 +52,7 @@ def test_user_unfollow(session):
     stretch = User.query.filter_by(username='Harold Stretch Joseph').first()
     assert lamar.is_following(stretch)
     lamar.unfollow(stretch)
+    session.commit()
     assert stretch not in lamar.following.all()
     assert lamar not in stretch.followers.all()
 
@@ -57,6 +60,7 @@ def test_user_unfollow(session):
     amanda = User.query.filter_by(username='Amanda De Santa').first()
     assert kyle.is_following(amanda)
     kyle.unfollow(amanda)
+    session.commit()
     assert amanda not in kyle.following.all()
     assert kyle not in amanda.followers.all()
 

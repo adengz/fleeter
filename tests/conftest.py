@@ -1,4 +1,16 @@
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+
+"""
+This wonderful rollback-any-committed-transaction setup 
+is fully credited to the following medium post
+https://medium.com/@vittorio.camisa/agile-database-integration-tests-with-python-sqlalchemy-and-factory-boy-6824e8fe33a1
+"""
+
+
+Session = sessionmaker()
 
 
 @pytest.fixture(scope='session')
@@ -11,21 +23,22 @@ def app():
     context.pop()
 
 
-@pytest.fixture(scope='session')
-def db(app):
-    from fleeter import db
-    db.init_app(app)
-
-    return db
+@pytest.fixture(scope='module')
+def connection(app):
+    engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+    connection = engine.connect()
+    yield connection
+    connection.close()
 
 
 @pytest.fixture(scope='function')
-def session(db):
-    db.session.begin_nested()
+def session(connection):
+    transaction = connection.begin()
+    session = Session(bind=connection)
 
-    yield db.session
+    yield session
 
+    # Explicitly close session
+    session.close()
     # Rollback any transactions
-    db.session.rollback()
-    # Explicitly close DB session
-    db.session.close()
+    transaction.rollback()

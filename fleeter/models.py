@@ -39,7 +39,7 @@ class User(db.Model):
 
     def to_dict(self):
         return {'id': self.id, 'username': self.username,
-                'fleets': self.fleet.count(),
+                'total_fleets': self.fleet.count(),
                 'following': self.following.count(),
                 'followers': self.followers.count()}
 
