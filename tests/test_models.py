@@ -7,24 +7,24 @@ def test_user_to_dict(session):
     assert lamar_dict['id'] == 3
     assert lamar_dict['username'] == 'Lamar Davis'
     assert lamar_dict['total_fleets'] == 6
-    assert lamar_dict['following'] == 4
-    assert lamar_dict['followers'] == 9
+    assert lamar_dict['total_following'] == 4
+    assert lamar_dict['total_followers'] == 9
 
     jimmy = User.query.filter_by(username='Jimmy De Santa').first()
     jimmy_dict = jimmy.to_dict()
     assert jimmy_dict['id'] == 14
     assert jimmy_dict['username'] == 'Jimmy De Santa'
     assert jimmy_dict['total_fleets'] == 20
-    assert jimmy_dict['following'] == 3
-    assert jimmy_dict['followers'] == 3
+    assert jimmy_dict['total_following'] == 3
+    assert jimmy_dict['total_followers'] == 3
 
     ron = User.query.filter_by(username='Ron Jakowski').first()
     ron_dict = ron.to_dict()
     assert ron_dict['id'] == 26
     assert ron_dict['username'] == 'Ron Jakowski'
     assert ron_dict['total_fleets'] == 0
-    assert ron_dict['following'] == 1
-    assert ron_dict['followers'] == 1
+    assert ron_dict['total_following'] == 1
+    assert ron_dict['total_followers'] == 1
 
 
 def test_user_following_followers(session):
@@ -95,7 +95,7 @@ def test_user_get_own_fleets(session):
     assert sorted(lester_fleets, key=lambda f: f.created_at, reverse=True) \
            == lester_fleets
 
-    wade = User.query.filter_by(username='Wade Herbert').first()
+    wade = User.query.filter_by(username='Wade Hebert').first()
     wade_fleets = wade.get_fleets(following=False).all()
     assert len(wade_fleets) == 2
     assert set([f.user for f in wade_fleets]) == {wade}

@@ -40,8 +40,8 @@ class User(db.Model):
     def to_dict(self):
         return {'id': self.id, 'username': self.username,
                 'total_fleets': self.fleets.count(),
-                'following': self.following.count(),
-                'followers': self.followers.count()}
+                'total_following': self.following.count(),
+                'total_followers': self.followers.count()}
 
     def is_following(self, other: User) -> bool:
         """Checks whether current user is following the other user."""
