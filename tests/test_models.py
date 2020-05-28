@@ -40,7 +40,7 @@ def test_user_following_followers(session):
                                 'Anak Horozian']
 
 
-def test_user_own_fleets(session):
+def test_user_fleets(session):
     devin = User.query.filter_by(username='Devin Weston').first()
     devin_fleets = devin.fleets.all()
     assert len(devin_fleets) == 5
@@ -66,7 +66,7 @@ def test_user_own_fleets(session):
            == wade_fleets
 
 
-def test_user_get_newsfeed(session):
+def test_user_newsfeed(session):
     tanisha = User.query.filter_by(username='Tanisha Jackson').first()
     tanisha_newsfeed = tanisha.newsfeed.all()
     all_tanisha_fleets = []

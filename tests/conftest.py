@@ -23,12 +23,20 @@ def app():
     context.pop()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
+def name_to_id(app):
+    from fleeter import db
+    from fleeter.models import User
+    db.init_app(app)
+    return {u.username: u.id for u in User.query.all()}
+
+
+@pytest.fixture(scope='session')
 def client(app):
     return app.test_client()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def connection(app):
     engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
     connection = engine.connect()
