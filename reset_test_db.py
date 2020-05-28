@@ -45,6 +45,7 @@ with open(DATA_ROOT / CSV_FILE) as f:
 
 # Add a pre-authorized user for api testing
 player = User(username=YOUR_NAME, auth0_id=AUTH0_ID)
+fleet = Fleet(post='Hola, Los Santos.', user=player)
 db.session.add(player)
 db.session.commit()
 # Follow a few unseen characters

@@ -44,6 +44,14 @@ class User(db.Model):
                 'total_following': self.following.count(),
                 'total_followers': self.followers.count()}
 
+    @property
+    def newsfeed(self):
+        """Fetches fleets of a user's own and other users being followed."""
+        others = Fleet.query.\
+            join(Follow, (Follow.followee_id == Fleet.user_id))\
+            .filter(Follow.follower_id == self.id)
+        return self.fleets.union(others).order_by(Fleet.created_at.desc())
+
     def is_following(self, other: User) -> bool:
         """Checks whether current user is following the other user."""
         assert self != other
@@ -59,24 +67,6 @@ class User(db.Model):
         """Unfollows the other user if currently following"""
         if self.is_following(other):
             self.following.remove(other)
-
-    def get_fleets(self, following: bool = False):
-        """
-        Fetches fleets of a user and (optionally) his/her following.
-
-        Args:
-            following: Whether including following.
-
-        Returns:
-            A Query object of fleets sorted in reverse chronological order.
-        """
-        if not following:
-            return self.fleets
-        else:
-            others = Fleet.query\
-                .join(Follow, (Follow.followee_id == Fleet.user_id))\
-                .filter(Follow.follower_id == self.id)
-            return self.fleets.union(others).order_by(Fleet.created_at.desc())
 
 
 class Fleet(db.Model):
