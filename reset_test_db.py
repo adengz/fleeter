@@ -6,6 +6,8 @@ from fleeter.models import User, Fleet, Follow
 
 DATA_ROOT = Path('data')
 CSV_FILE = 'lifeinvader_by_timeline.csv'
+YOUR_NAME = 'Troll'
+AUTH0_ID = 'auth0|5ecfd88cfa16220c1fba99c5'
 
 app = create_app('config.TestingConfig')
 context = app.app_context()
@@ -41,5 +43,16 @@ with open(DATA_ROOT / CSV_FILE) as f:
                                       created_at=time))
                 db.session.commit()
 
+# Add a pre-authorized user for api testing
+player = User(username=YOUR_NAME, auth0_id=AUTH0_ID)
+db.session.add(player)
+db.session.commit()
+# Follow a few unseen characters
+follows = []
+for profile in ['Demarcus Bradley', 'Hayden Dubose', 'Tavell Clinton']:
+    follows.append(Follow(follower_id=player.id,
+                          followee_id=users[profile].id))
+db.session.add_all(follows)
+db.session.commit()
 db.session.close()
 context.pop()

@@ -21,6 +21,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(30), index=True,
                          nullable=False, unique=True)
+    auth0_id = db.Column(db.String(60), index=True, unique=True)
     fleets = db.relationship('Fleet', order_by='Fleet.created_at.desc()',
                              backref='user', cascade='all, delete-orphan',
                              lazy='dynamic')
