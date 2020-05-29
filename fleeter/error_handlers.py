@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify
 from fleeter import db
+from fleeter.auth import AuthError
 
 
 bp = Blueprint('errors', __name__)
@@ -28,3 +29,10 @@ def internal_server_error(error):
     db.session.rollback()
     return jsonify({'success': False, 'error': 500,
                     'message': 'Internal server error'}), 500
+
+
+@bp.app_errorhandler(AuthError)
+def auth_error(ex):
+    response = {'success': False}
+    response.update(ex.error)
+    return jsonify(response), ex.status_code

@@ -1,9 +1,85 @@
 import json
+import pytest
+import requests
+from fleeter.auth import AUTH0_DOMAIN, API_AUDIENCE
+
+
+@pytest.fixture(scope='module')
+def client(app):
+    return app.test_client()
+
+
+@pytest.fixture(scope='module')
+def user_client(app):
+    url = f'https://{AUTH0_DOMAIN}/oauth/token'
+    data = {'client_id': app.config['USER_CLIENT_ID'],
+            'client_secret': app.config['USER_CLIENT_SECRET'],
+            'audience': API_AUDIENCE, 'grant_type': 'client_credentials'}
+    r = requests.post(url, json=data)
+    user_token = r.json()['access_token']
+    uc = app.test_client()
+    uc.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {user_token}'
+    return uc
+
+
+@pytest.fixture(scope='module')
+def mod_client(app):
+    url = f'https://{AUTH0_DOMAIN}/oauth/token'
+    data = {'client_id': app.config['MOD_CLIENT_ID'],
+            'client_secret': app.config['MOD_CLIENT_SECRET'],
+            'audience': API_AUDIENCE, 'grant_type': 'client_credentials'}
+    r = requests.post(url, json=data)
+    mod_token = r.json()['access_token']
+    mc = app.test_client()
+    mc.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {mod_token}'
+    return mc
+
+
+class TestAuth:
+
+    def test_get_user_follow(self, user_client, mod_client):
+        res1 = user_client.get('/api/users/1/following')
+        assert res1.status_code == 200
+
+        res2 = user_client.get('/api/users/1/followers')
+        assert res2.status_code == 200
+
+        res3 = mod_client.get('/api/users/2/following')
+        assert res3.status_code == 200
+
+        res4 = mod_client.get('/api/users/2/followers')
+        assert res4.status_code == 200
+
+    def test_get_newsfeed(self, user_client):
+        res = user_client.get('/api/fleets/newsfeed')
+        assert res.status_code == 200
+
+    def test_401_endpoints_require_auth_unauthed(self, client):
+        code = 'authorization_header_missing'
+
+        following_res = client.get('/api/users/1/following')
+        assert following_res.status_code == 401
+        assert json.loads(following_res.data)['code'] == code
+
+        followers_res = client.get('/api/users/2/followers')
+        assert followers_res.status_code == 401
+        assert json.loads(followers_res.data)['code'] == code
+
+        newsfeed_res = client.get('/api/fleets/newsfeed')
+        assert newsfeed_res.status_code == 401
+        assert json.loads(newsfeed_res.data)['code'] == code
+
+    def test_403_user_endpoints_mod(self, mod_client):
+        code = 'forbidden'
+
+        newsfeed_res = mod_client.get('/api/fleets/newsfeed')
+        assert newsfeed_res.status_code == 403
+        assert json.loads(newsfeed_res.data)['code'] == code
 
 
 def test_get_user_fleets(client, app, name_to_id):
-    per_page = app.config['FLEETS_PER_PAGE']
     url = '/api/users/{}/fleets'
+    per_page = app.config['FLEETS_PER_PAGE']
 
     tanisha_res = client.get(url.format(name_to_id['Tanisha Jackson']))
     tanisha_data = json.loads(tanisha_res.data)

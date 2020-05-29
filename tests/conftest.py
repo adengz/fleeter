@@ -3,11 +3,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
-"""
+'''
 This wonderful rollback-any-committed-transaction setup 
 is fully credited to the following medium post
 https://medium.com/@vittorio.camisa/agile-database-integration-tests-with-python-sqlalchemy-and-factory-boy-6824e8fe33a1
-"""
+'''
 
 
 Session = sessionmaker()
@@ -29,11 +29,6 @@ def name_to_id(app):
     from fleeter.models import User
     db.init_app(app)
     return {u.username: u.id for u in User.query.all()}
-
-
-@pytest.fixture(scope='session')
-def client(app):
-    return app.test_client()
 
 
 @pytest.fixture(scope='session')
