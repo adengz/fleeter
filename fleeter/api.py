@@ -8,8 +8,11 @@ from fleeter.auth import requires_auth
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 
-def _get_user(auth0_id: str) -> User:
-    return User.query.filter_by(auth0_id=auth0_id).one_or_none()
+def _get_user(auth0_id: str, raise_404: bool = True) -> User:
+    user = User.query.filter_by(auth0_id=auth0_id).one_or_none()
+    if user is None and raise_404:
+        abort(404)
+    return user
 
 
 def _owns(user: User, fleet: Fleet) -> bool:
@@ -26,12 +29,14 @@ def _get_paginated_user_items(user_id: int, field: str):
     else:
         default_per_page = current_app.config['FLEETS_PER_PAGE']
     per_page = request.args.get('per_page', default_per_page, type=int)
-
     if page <= 0 or per_page <= 0:
         abort(422)
+
     query = getattr(user, field)
     paginated = query.paginate(page=page, per_page=per_page).items
     response[field] = [i.to_dict() for i in paginated]
+    if field == 'newsfeed':
+        response['newsfeed_length'] = query.count()
     response['success'] = True
     return jsonify(response)
 
