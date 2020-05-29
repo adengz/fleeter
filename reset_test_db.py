@@ -7,7 +7,6 @@ from fleeter.models import User, Fleet, Follow
 DATA_ROOT = Path('data')
 CSV_FILE = 'lifeinvader_by_timeline.csv'
 YOUR_NAME = 'Troll'
-AUTH0_ID = 'auth0|5ecfd88cfa16220c1fba99c5'
 
 app = create_app('config.TestingConfig')
 context = app.app_context()
@@ -44,7 +43,8 @@ with open(DATA_ROOT / CSV_FILE) as f:
                 db.session.commit()
 
 # Add a pre-authorized user for api testing
-player = User(username=YOUR_NAME, auth0_id=AUTH0_ID)
+auth0_id = app.config['USER_CLIENT_ID'] + '@clients'
+player = User(username=YOUR_NAME, auth0_id=auth0_id)
 fleet = Fleet(post='Hola, Los Santos.', user=player)
 db.session.add(player)
 db.session.commit()
