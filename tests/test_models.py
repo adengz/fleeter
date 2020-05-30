@@ -43,7 +43,7 @@ class TestUser:
         fleets.sort(key=lambda f: f.created_at, reverse=True)
         assert franklin_newsfeed == [f.post for f in fleets]
 
-    def test_follow(self, users, session):
+    def test_follow(self, users):
         michael = users['Michael']
         trevor = users['Trevor']
         query = Follow.query.filter_by(follower_id=michael.id,
@@ -55,13 +55,13 @@ class TestUser:
         assert query.one_or_none() is None
 
         michael.follow(trevor)
-        session.commit()
+        michael.update()
         assert trevor in michael.following.all()
         assert michael in trevor.followers.all()
         assert michael.is_following(trevor)
         assert query.one_or_none() is not None
 
-    def test_unfollow(self, users, session):
+    def test_unfollow(self, users):
         michael = users['Michael']
         trevor = users['Trevor']
         query = Follow.query.filter_by(follower_id=trevor.id,
@@ -73,7 +73,7 @@ class TestUser:
         assert query.one_or_none() is not None
 
         trevor.unfollow(michael)
-        session.commit()
+        trevor.update()
         assert trevor not in michael.followers.all()
         assert michael not in trevor.following.all()
         assert not trevor.is_following(michael)

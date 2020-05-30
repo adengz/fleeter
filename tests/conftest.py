@@ -4,7 +4,8 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 
-DATA_ROOT = Path('../data')
+TEST_ROOT = Path(__file__).parent
+DATA_ROOT = Path(TEST_ROOT / '../data')
 CSV_FILE = 'gtav_events.csv'
 
 
