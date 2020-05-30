@@ -109,8 +109,7 @@ def delete_fleet(payload, fleet_id):
 
     try:
         fleet.delete()
-    except Exception as e:
-        print(e)
+    except:
         abort(500)
     return jsonify({'success': True, 'id': fleet_id})
 

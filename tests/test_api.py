@@ -36,90 +36,12 @@ def mod_client(app):
     return mc
 
 
-class TestAuth:
+class TestGetUserFleets:
 
-    def test_get_user_follow(self, user_client, mod_client):
-        res_following = user_client.get('/api/users/1/following')
-        assert res_following.status_code == 200
+    url = '/api/users/4/fleets'  # Trevor
 
-        res_followers = user_client.get('/api/users/2/followers')
-        assert res_followers.status_code == 200
-
-    def test_get_newsfeed(self, user_client):
-        res = user_client.get('/api/fleets/newsfeed')
-        assert res.status_code == 200
-
-    def test_post_fleet(self, user_client):
-        res = user_client.post('/api/fleets', json={'post': 'Fame or Shame'})
-        assert res.status_code == 200
-
-    def test_patch_fleet(self, user_client):
-        res = user_client.patch('/api/fleets/17',
-                                json={'post': 'Fame or Shame'})
-        assert res.status_code == 200
-
-    def test_delete_fleet_owner(self, user_client):
-        res = user_client.delete('/api/fleets/17')
-        assert res.status_code == 200
-
-    def test_delete_fleet_mod(self, mod_client):
-        res = mod_client.delete('/api/fleets/1')
-        assert res.status_code == 200
-
-    def test_403_patch_delete_fleet_not_owner(self, user_client):
-        patch_res = user_client.patch('/api/fleets/1',
-                                      json={'post': 'welcome to Los Santos'})
-        assert patch_res.status_code == 403
-
-        delete_res = user_client.delete('/api/fleets/1')
-        assert delete_res.status_code == 403
-
-    def test_401_endpoints_require_auth_unauthed(self, client):
-        code = 'authorization_header_missing'
-
-        following_res = client.get('/api/users/1/following')
-        assert following_res.status_code == 401
-        assert json.loads(following_res.data)['code'] == code
-
-        followers_res = client.get('/api/users/2/followers')
-        assert followers_res.status_code == 401
-        assert json.loads(followers_res.data)['code'] == code
-
-        newsfeed_res = client.get('/api/fleets/newsfeed')
-        assert newsfeed_res.status_code == 401
-        assert json.loads(newsfeed_res.data)['code'] == code
-
-        post_fleet_res = client.post('/api/fleets',
-                                     json={'post': 'Fame or Shame'})
-        assert post_fleet_res.status_code == 401
-
-        patch_fleet_res = client.patch('/api/fleets/17',
-                                       json={'post': 'Fame or Shame'})
-        assert patch_fleet_res.status_code == 401
-
-        delete_fleet_res = client.delete('/api/fleets/17')
-        assert delete_fleet_res.status_code == 401
-
-    def test_403_user_endpoints_mod(self, mod_client):
-        code = 'forbidden'
-
-        newsfeed_res = mod_client.get('/api/fleets/newsfeed')
-        assert newsfeed_res.status_code == 403
-        assert json.loads(newsfeed_res.data)['code'] == code
-
-        post_fleet_res = mod_client.post('/api/fleets',
-                                         json={'post': 'Fame or Shame'})
-        assert post_fleet_res.status_code == 403
-
-        patch_fleet_res = mod_client.patch('/api/fleets/17',
-                                           json={'post': 'Fame or Shame'})
-        assert patch_fleet_res.status_code == 403
-
-
-class TestEndpoints:
-
-    def test_get_user_fleets(self, client, app, users):
-        res = client.get(f'/api/users/{users["Trevor"].id}/fleets')
+    def test_get_user_fleets(self, client, app):
+        res = client.get(self.url)
         data = json.loads(res.data)
 
         assert res.status_code == 200
@@ -129,8 +51,33 @@ class TestEndpoints:
         assert data['total_followers'] == 1
         assert len(data['fleets']) <= app.config['FLEETS_PER_PAGE']
 
-    def test_get_user_following(self, user_client, app, users):
-        res = user_client.get(f'/api/users/{users["Franklin"].id}/following')
+    def test_404_user_not_exist(self, client):
+        res = client.get('/api/users/100/fleets')
+        assert res.status_code == 404
+
+    def test_422_non_positive_page_args(self, client):
+        res1 = client.get(self.url + '?page=0')
+        assert res1.status_code == 422
+
+        res2 = client.get(self.url + '?per_page=0')
+        assert res2.status_code == 422
+
+    def test_404_page_out_of_range(self, client):
+        res = client.get(self.url + '?page=20')
+        assert res.status_code == 404
+
+
+class TestGetUserFollowing:
+
+    url = '/api/users/3/following'  # Franklin
+
+    def test_401_unauthorized(self, client):
+        res = client.get(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_get_user_following(self, user_client, app):
+        res = user_client.get(self.url)
         data = json.loads(res.data)
 
         assert res.status_code == 200
@@ -140,8 +87,33 @@ class TestEndpoints:
         assert data['total_followers'] == 1
         assert len(data['following']) <= app.config['USERS_PER_PAGE']
 
-    def test_get_user_followers(self, user_client, app, users):
-        res = user_client.get(f'/api/users/{users["Michael"].id}/followers')
+    def test_404_user_not_exist(self, user_client):
+        res = user_client.get('/api/users/100/following')
+        assert res.status_code == 404
+
+    def test_422_non_positive_page_args(self, user_client):
+        res1 = user_client.get(self.url + '?page=-1')
+        assert res1.status_code == 422
+
+        res2 = user_client.get(self.url + '?per_page=0')
+        assert res2.status_code == 422
+
+    def test_404_page_out_of_range(self, user_client):
+        res = user_client.get(self.url + '?page=10')
+        assert res.status_code == 404
+
+
+class TestGetUserFollowers:
+
+    url = '/api/users/2/followers'  # Michael
+
+    def test_401_unauthorized(self, client):
+        res = client.get(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_get_user_followers(self, user_client, app):
+        res = user_client.get(self.url)
         data = json.loads(res.data)
 
         assert res.status_code == 200
@@ -151,8 +123,38 @@ class TestEndpoints:
         assert data['total_followers'] == 3
         assert len(data['followers']) <= app.config['USERS_PER_PAGE']
 
+    def test_404_user_not_exist(self, user_client):
+        res = user_client.get('/api/users/100/followers')
+        assert res.status_code == 404
+
+    def test_422_non_positive_page_args(self, user_client):
+        res1 = user_client.get(self.url + '?page=0')
+        assert res1.status_code == 422
+
+        res2 = user_client.get(self.url + '?per_page=-5')
+        assert res2.status_code == 422
+
+    def test_404_page_out_of_range(self, user_client):
+        res = user_client.get(self.url + '?page=10')
+        assert res.status_code == 404
+
+
+class TestGetNewsFeed:
+
+    url = '/api/fleets/newsfeed'
+
+    def test_401_unauthorized(self, client):
+        res = client.get(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_403_moderator(self, mod_client):
+        res = mod_client.get(self.url)
+        assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
+
     def test_get_newsfeed(self, user_client, app):
-        res = user_client.get('/api/fleets/newsfeed')
+        res = user_client.get(self.url)
         data = json.loads(res.data)
 
         assert res.status_code == 200
@@ -163,67 +165,70 @@ class TestEndpoints:
         assert data['newsfeed_length'] == 13
         assert len(data['newsfeed']) <= app.config['FLEETS_PER_PAGE']
 
-    def test_404_get_user_items_user_not_found(self, user_client):
-        fleets_res = user_client.get('/api/users/100/fleets')
-        assert fleets_res.status_code == 404
-        assert not json.loads(fleets_res.data)['success']
+    def test_422_non_positive_page_args(self, user_client):
+        res1 = user_client.get(self.url + '?page=-1')
+        assert res1.status_code == 422
 
-        following_res = user_client.get('/api/users/100/following')
-        assert following_res.status_code == 404
-        assert not json.loads(following_res.data)['success']
+        res2 = user_client.get(self.url + '?per_page=-5')
+        assert res2.status_code == 422
 
-        followers_res = user_client.get('/api/users/100/followers')
-        assert followers_res.status_code == 404
-        assert not json.loads(followers_res.data)['success']
+    def test_404_page_out_of_range(self, user_client):
+        res = user_client.get(self.url + '?page=20')
+        assert res.status_code == 404
 
-    def test_422_get_user_items_non_positive_page_args(self, user_client):
-        fleets_res = user_client.get('/api/users/2/fleets?page=0')
-        assert fleets_res.status_code == 422
-        assert not json.loads(fleets_res.data)['success']
 
-        following_res = user_client.get('/api/users/3/following?per_page=0')
-        assert following_res.status_code == 422
-        assert not json.loads(following_res.data)['success']
+class TestPostFleet:
 
-        followers_res = user_client.get('/api/users/4/followers?page=-1')
-        assert followers_res.status_code == 422
-        assert not json.loads(followers_res.data)['success']
+    url = '/api/fleets'
 
-        newsfeed_res = user_client.get('/api/fleets/newsfeed?per_page=-5')
-        assert newsfeed_res.status_code == 422
-        assert not json.loads(newsfeed_res.data)['success']
+    def test_401_unauthorized(self, client):
+        res = client.post(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
 
-    def test_404_get_user_items_page_out_of_range(self, user_client, users):
-        fleets_url = f'/api/users/{users["Trevor"].id}/fleets'
-        fleets_res = user_client.get(fleets_url + '?page=10')
-        assert fleets_res.status_code == 404
-        assert not json.loads(fleets_res.data)['success']
-
-        following_url = f'/api/users/{users["Franklin"].id}/following'
-        following_res = user_client.get(following_url + '?page=5')
-        assert following_res.status_code == 404
-        assert not json.loads(following_res.data)['success']
-
-        followers_url = f'/api/users/{users["Michael"].id}/followers'
-        followers_res = user_client.get(followers_url + '?page=5')
-        assert followers_res.status_code == 404
-        assert not json.loads(followers_res.data)['success']
-
-        newsfeed_res = user_client.get('/api/fleets/newsfeed?page=20')
-        assert newsfeed_res.status_code == 404
-        assert not json.loads(newsfeed_res.data)['success']
+    def test_403_moderator(self, mod_client):
+        res = mod_client.post(self.url)
+        assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
 
     def test_post_fleet(self, user_client):
-        res = user_client.post('/api/fleets', json={'post': 'Fame or Shame'})
+        res = user_client.post(self.url, json={'post': 'Fame or Shame'})
         data = json.loads(res.data)
         fleet = Fleet.query.get(data['id'])
         assert res.status_code == 200
         assert data['success']
         assert fleet.post == 'Fame or Shame'
 
+    def test_400_no_post_arg(self, user_client):
+        res = user_client.post(self.url, json={'fleet': 'Fame or Shame'})
+        assert res.status_code == 400
+
+    def test_422_empty_post(self, user_client):
+        post_res = user_client.post(self.url, json={'post': ''})
+        assert post_res.status_code == 422
+
+
+class TestPatchFleet:
+
+    url = '/api/fleets/17'
+
+    def test_401_unauthorized(self, client):
+        res = client.patch(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_403_moderator(self, mod_client):
+        res = mod_client.patch(self.url)
+        assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
+
+    def test_403_not_owner(self, user_client):
+        res = user_client.patch('/api/fleets/1',
+                                json={'post': 'welcome to Los Santos'})
+        assert res.status_code == 403
+
     def test_patch_fleet(self, user_client):
-        res = user_client.patch('/api/fleets/17',
-                                json={'post': 'Fame or Shame'})
+        res = user_client.patch(self.url, json={'post': 'Fame or Shame'})
         data = json.loads(res.data)
         fleet = Fleet.query.get(17)
         assert res.status_code == 200
@@ -231,8 +236,35 @@ class TestEndpoints:
         assert data['id'] == 17
         assert fleet.post == 'Fame or Shame'
 
-    def test_delete_fleet(self, user_client):
-        res = user_client.delete('/api/fleets/17')
+    def test_404_fleet_not_exist(self, user_client):
+        res = user_client.patch('/api/fleets/100',
+                                json={'post': 'The Big Score'})
+        assert res.status_code == 404
+
+    def test_400_no_post_arg(self, user_client):
+        res = user_client.patch(self.url, json={'fleet': 'Fame or Shame'})
+        assert res.status_code == 400
+
+    def test_422_empty_post(self, user_client):
+        res = user_client.patch(self.url, json={'post': ''})
+        assert res.status_code == 422
+
+
+class TestDeleteFleet:
+
+    url = '/api/fleets/17'
+
+    def test_401_unauthorized(self, client):
+        res = client.delete(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_403_neither_owner_nor_moderator(self, user_client):
+        res = user_client.delete('/api/fleets/1')
+        assert res.status_code == 403
+
+    def test_delete_fleet_as_owner(self, user_client):
+        res = user_client.delete(self.url)
         data = json.loads(res.data)
         fleet = Fleet.query.get(17)
         assert res.status_code == 200
@@ -240,33 +272,15 @@ class TestEndpoints:
         assert data['id'] == 17
         assert fleet is None
 
-    def test_404_patch_delete_fleet_not_exist(self, user_client):
-        patch_res = user_client.patch('/api/fleets/100',
-                                      json={'post': 'The Big Score'})
-        assert patch_res.status_code == 404
-        assert not json.loads(patch_res.data)['success']
+    def test_delete_fleet_as_moderator(self, mod_client):
+        res = mod_client.delete('/api/fleets/1')
+        data = json.loads(res.data)
+        fleet = Fleet.query.get(1)
+        assert res.status_code == 200
+        assert data['success']
+        assert data['id'] == 1
+        assert fleet is None
 
-        delete_res = user_client.delete('/api/fleets/100')
-        assert delete_res.status_code == 404
-        assert not json.loads(delete_res.data)['success']
-
-    def test_400_post_fleet_no_post_arg(self, user_client):
-        res = user_client.post('/api/fleets',
-                               json={'fleet': 'Fame or Shame'})
-        assert res.status_code == 400
-        assert not json.loads(res.data)['success']
-
-    def test_400_patch_fleet_no_post_arg(self, user_client):
-        res = user_client.patch('/api/fleets/17',
-                                json={'fleet': 'Fame or Shame'})
-        assert res.status_code == 400
-        assert not json.loads(res.data)['success']
-
-    def test_422_post_patch_fleet_empty_post(self, user_client):
-        post_res = user_client.post('/api/fleets', json={'post': ''})
-        assert post_res.status_code == 422
-        assert not json.loads(post_res.data)['success']
-
-        patch_res = user_client.patch('/api/fleets/17', json={'post': ''})
-        assert patch_res.status_code == 422
-        assert not json.loads(patch_res.data)['success']
+    def test_404_fleet_not_exist(self, user_client):
+        res = user_client.delete('/api/fleets/100')
+        assert res.status_code == 404

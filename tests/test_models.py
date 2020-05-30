@@ -7,7 +7,7 @@ class TestUser:
         player_dict = users['player'].to_dict()
         assert player_dict['id'] == 1
         assert player_dict['username'] == 'player'
-        assert player_dict['total_fleets'] == 0
+        assert player_dict['total_fleets'] == 1
         assert player_dict['total_following'] == 2
         assert player_dict['total_followers'] == 0
         assert 'auth0_id' not in player_dict
@@ -26,11 +26,12 @@ class TestUser:
                                  'Trevor Philips Industries', 'Nervous Ron',
                                  'Mr. Philips']
 
-    def test_following_followers(self, users):
+    def test_following(self, users):
         player_following = [u.username for u in
                             users['player'].following.all()]
         assert player_following == ['Michael', 'Trevor']
 
+    def test_followers(self, users):
         michael_followers = [u.username for u in
                              users['Michael'].followers.all()]
         assert michael_followers == ['player', 'Trevor', 'Franklin']
