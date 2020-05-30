@@ -1,140 +1,91 @@
-from fleeter.models import User, Fleet
+from fleeter.models import Fleet, Follow
 
 
-def test_user_to_dict(session):
-    lamar = User.query.filter_by(username='Lamar Davis').first()
-    lamar_dict = lamar.to_dict()
-    assert lamar_dict['id'] == 3
-    assert lamar_dict['username'] == 'Lamar Davis'
-    assert lamar_dict['total_fleets'] == 6
-    assert lamar_dict['total_following'] == 4
-    assert lamar_dict['total_followers'] == 9
+class TestUser:
 
-    jimmy = User.query.filter_by(username='Jimmy De Santa').first()
-    jimmy_dict = jimmy.to_dict()
-    assert jimmy_dict['id'] == 14
-    assert jimmy_dict['username'] == 'Jimmy De Santa'
-    assert jimmy_dict['total_fleets'] == 20
-    assert jimmy_dict['total_following'] == 3
-    assert jimmy_dict['total_followers'] == 3
+    def test_to_dict(self, users):
+        player_dict = users['player'].to_dict()
+        assert player_dict['id'] == 1
+        assert player_dict['username'] == 'player'
+        assert player_dict['total_fleets'] == 0
+        assert player_dict['total_following'] == 2
+        assert player_dict['total_followers'] == 0
+        assert 'auth0_id' not in player_dict
 
-    ron = User.query.filter_by(username='Ron Jakowski').first()
-    ron_dict = ron.to_dict()
-    assert ron_dict['id'] == 26
-    assert ron_dict['username'] == 'Ron Jakowski'
-    assert ron_dict['total_fleets'] == 0
-    assert ron_dict['total_following'] == 1
-    assert ron_dict['total_followers'] == 1
+        franklin_dict = users['Franklin'].to_dict()
+        assert franklin_dict['id'] == 3
+        assert franklin_dict['username'] == 'Franklin'
+        assert franklin_dict['total_fleets'] == 4
+        assert franklin_dict['total_following'] == 1
+        assert franklin_dict['total_followers'] == 1
+        assert 'auth0_id' not in franklin_dict
 
+    def test_fleets(self, users):
+        trevor_fleets = [f.post for f in users['Trevor'].fleets.all()]
+        assert trevor_fleets == ['Friends Reunited', 'Crystal Maze',
+                                 'Trevor Philips Industries', 'Nervous Ron',
+                                 'Mr. Philips']
 
-def test_user_following_followers(session):
-    tracey = User.query.filter_by(username='Tracey De Santa').first()
-    tracey_following = [u.username for u in tracey.following.all()]
-    assert tracey_following == ['Jimmy De Santa', 'Michael De Santa',
-                                'Amanda De Santa']
+    def test_following_followers(self, users):
+        player_following = [u.username for u in
+                            users['player'].following.all()]
+        assert player_following == ['Michael', 'Trevor']
 
-    simeon = User.query.filter_by(username='Simeon Yetarian').first()
-    simeon_followers = [u.username for u in simeon.followers.all()]
-    assert simeon_followers == ['Owen Yates', 'Barbara Watkins',
-                                'Yerghat Tankian', 'Sacha Yetarian',
-                                'Anak Horozian']
+        michael_followers = [u.username for u in
+                             users['Michael'].followers.all()]
+        assert michael_followers == ['player', 'Trevor', 'Franklin']
 
+    def test_newsfeed(self, users):
+        franklin_newsfeed = [f.post for f in users['Franklin'].newsfeed.all()]
+        fleets = users['Franklin'].fleets.all()
+        fleets += users['Michael'].fleets.all()
+        fleets.sort(key=lambda f: f.created_at, reverse=True)
+        assert franklin_newsfeed == [f.post for f in fleets]
 
-def test_user_fleets(session):
-    devin = User.query.filter_by(username='Devin Weston').first()
-    devin_fleets = devin.fleets.all()
-    assert len(devin_fleets) == 5
-    assert set([f.user for f in devin_fleets]) == {devin}
-    assert 'Meltdown' in devin_fleets[0].post
-    assert sorted(devin_fleets, key=lambda f: f.created_at, reverse=True) \
-           == devin_fleets
+    def test_follow(self, users, session):
+        michael = users['Michael']
+        trevor = users['Trevor']
+        query = Follow.query.filter_by(follower_id=michael.id,
+                                       followee_id=trevor.id)
 
-    lester = User.query.filter_by(username='Lester Crest').first()
-    lester_fleets = lester.fleets.all()
-    assert len(lester_fleets) == 9
-    assert set([f.user for f in lester_fleets]) == {lester}
-    assert 'Lifeinvader' in lester_fleets[-1].post
-    assert sorted(lester_fleets, key=lambda f: f.created_at, reverse=True) \
-           == lester_fleets
+        assert trevor not in michael.following.all()
+        assert michael not in trevor.followers.all()
+        assert not michael.is_following(trevor)
+        assert query.one_or_none() is None
 
-    wade = User.query.filter_by(username='Wade Hebert').first()
-    wade_fleets = wade.fleets.all()
-    assert len(wade_fleets) == 2
-    assert set([f.user for f in wade_fleets]) == {wade}
-    assert 'Los Santos' in wade_fleets[-1].post
-    assert sorted(wade_fleets, key=lambda f: f.created_at, reverse=True) \
-           == wade_fleets
+        michael.follow(trevor)
+        session.commit()
+        assert trevor in michael.following.all()
+        assert michael in trevor.followers.all()
+        assert michael.is_following(trevor)
+        assert query.one_or_none() is not None
 
+    def test_unfollow(self, users, session):
+        michael = users['Michael']
+        trevor = users['Trevor']
+        query = Follow.query.filter_by(follower_id=trevor.id,
+                                       followee_id=michael.id)
 
-def test_user_newsfeed(session):
-    tanisha = User.query.filter_by(username='Tanisha Jackson').first()
-    tanisha_newsfeed = tanisha.newsfeed.all()
-    all_tanisha_fleets = []
-    for user in [tanisha] + tanisha.following.all():
-        all_tanisha_fleets.extend(Fleet.query.filter_by(user_id=user.id))
-    all_tanisha_fleets.sort(key=lambda f: f.created_at, reverse=True)
-    assert all_tanisha_fleets == tanisha_newsfeed
+        assert trevor in michael.followers.all()
+        assert michael in trevor.following.all()
+        assert trevor.is_following(michael)
+        assert query.one_or_none() is not None
 
-    kyle = User.query.filter_by(username='Kyle Chavis').first()
-    kyle_newsfeed = kyle.newsfeed.all()
-    all_kyle_fleets = []
-    for user in [kyle] + kyle.following.all():
-        all_kyle_fleets.extend(Fleet.query.filter_by(user_id=user.id))
-    all_kyle_fleets.sort(key=lambda f: f.created_at, reverse=True)
-    assert all_kyle_fleets == kyle_newsfeed
+        trevor.unfollow(michael)
+        session.commit()
+        assert trevor not in michael.followers.all()
+        assert michael not in trevor.following.all()
+        assert not trevor.is_following(michael)
+        assert query.one_or_none() is None
 
 
-def test_user_follow(session):
-    franklin = User.query.filter_by(username='Franklin Clinton').first()
-    lamar = User.query.filter_by(username='Lamar Davis').first()
-    assert lamar not in franklin.following.all()
-    assert franklin not in lamar.followers.all()
-    franklin.follow(lamar)
-    session.commit()
-    assert lamar in franklin.following.all()
-    assert franklin in lamar.followers.all()
+def test_fleet_to_dict():
+    fleet1_dict = Fleet.query.get(11).to_dict()
+    assert fleet1_dict['id'] == 11
+    assert fleet1_dict['post'] == 'The Jewel Store Job'
+    assert fleet1_dict['username'] == 'Michael'
 
-    michael = User.query.filter_by(username='Michael De Santa').first()
-    jimmy = User.query.filter_by(username='Jimmy De Santa').first()
-    assert jimmy not in michael.following.all()
-    assert michael not in jimmy.followers.all()
-    michael.follow(jimmy)
-    session.commit()
-    assert jimmy in michael.following.all()
-    assert michael in jimmy.followers.all()
-
-
-def test_user_unfollow(session):
-    lamar = User.query.filter_by(username='Lamar Davis').first()
-    stretch = User.query.filter_by(username='Harold Stretch Joseph').first()
-    assert lamar.is_following(stretch)
-    lamar.unfollow(stretch)
-    session.commit()
-    assert stretch not in lamar.following.all()
-    assert lamar not in stretch.followers.all()
-
-    kyle = User.query.filter_by(username='Kyle Chavis').first()
-    amanda = User.query.filter_by(username='Amanda De Santa').first()
-    assert kyle.is_following(amanda)
-    kyle.unfollow(amanda)
-    session.commit()
-    assert amanda not in kyle.following.all()
-    assert kyle not in amanda.followers.all()
-
-
-def test_fleet_to_dict(session):
-    jewel_post = 'NO!!!! My favorite jewelry store got robbed!'
-    jewel = Fleet.query.get(29)
-    jewel_dict = jewel.to_dict()
-    assert jewel_dict['id'] == 29
-    assert jewel_dict['post'] == jewel_post
-    assert jewel_dict['username'] == 'Amanda De Santa'
-
-    ud_post = 'How the hell did the Union Depository get broken into? ' \
-              'I thought it was supposed to be impenetrable! ' \
-              'What\'s this going to do to the dollar?'
-    ud = Fleet.query.get(134)
-    ud_dict = ud.to_dict()
-    assert ud_dict['id'] == 134
-    assert ud_dict['post'] == ud_post
-    assert ud_dict['username'] == 'Hayden Dubose'
+    fleet2_dict = Fleet.query.get(15).to_dict()
+    assert fleet2_dict['id'] == 15
+    assert fleet2_dict['post'] == 'Crystal Maze'
+    assert fleet2_dict['username'] == 'Trevor'

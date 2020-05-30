@@ -79,87 +79,38 @@ class TestAuth:
 
 class TestEndpoints:
 
-    def test_get_user_fleets(self, client, app, name_to_id):
-        url = '/api/users/{}/fleets'
-        per_page = app.config['FLEETS_PER_PAGE']
+    def test_get_user_fleets(self, client, app, users):
+        res = client.get(f'/api/users/{users["Trevor"].id}/fleets')
+        data = json.loads(res.data)
 
-        tanisha_url = url.format(name_to_id['Tanisha Jackson'])
-        tanisha_res = client.get(tanisha_url)
-        tanisha_data = json.loads(tanisha_res.data)
-        assert tanisha_res.status_code == 200
-        assert tanisha_data['success']
-        assert tanisha_data['total_fleets'] == 9
-        assert tanisha_data['total_following'] == 2
-        assert tanisha_data['total_followers'] == 2
-        assert len(tanisha_data['fleets']) <= per_page
+        assert res.status_code == 200
+        assert data['success']
+        assert data['total_fleets'] == 5
+        assert data['total_following'] == 1
+        assert data['total_followers'] == 1
+        assert len(data['fleets']) <= app.config['FLEETS_PER_PAGE']
 
-        tracey_url = url.format(name_to_id['Tracey De Santa'])
-        tracey_res = client.get(tracey_url)
-        tracey_data = json.loads(tracey_res.data)
-        assert tracey_res.status_code == 200
-        assert tracey_data['success']
-        assert tracey_data['total_fleets'] == 23
-        assert tracey_data['total_following'] == 3
-        assert tracey_data['total_followers'] == 3
-        assert len(tracey_data['fleets']) <= per_page
+    def test_get_user_following(self, user_client, app, users):
+        res = user_client.get(f'/api/users/{users["Franklin"].id}/following')
+        data = json.loads(res.data)
 
-        trevor_url = url.format(name_to_id['Trevor Philips'])
-        trevor_res = client.get(trevor_url)
-        trevor_data = json.loads(trevor_res.data)
-        assert trevor_res.status_code == 200
-        assert trevor_data['success']
-        assert trevor_data['total_fleets'] == 0
-        assert trevor_data['total_following'] == 0
-        assert trevor_data['total_followers'] == 1
-        assert len(trevor_data['fleets']) <= per_page
+        assert res.status_code == 200
+        assert data['success']
+        assert data['total_fleets'] == 4
+        assert data['total_following'] == 1
+        assert data['total_followers'] == 1
+        assert len(data['following']) <= app.config['USERS_PER_PAGE']
 
-    def test_get_user_following(self, user_client, app, name_to_id):
-        url = '/api/users/{}/following'
-        per_page = app.config['USERS_PER_PAGE']
+    def test_get_user_followers(self, user_client, app, users):
+        res = user_client.get(f'/api/users/{users["Michael"].id}/followers')
+        data = json.loads(res.data)
 
-        lamar_url = url.format(name_to_id['Lamar Davis'])
-        lamar_res = user_client.get(lamar_url)
-        lamar_data = json.loads(lamar_res.data)
-        assert lamar_res.status_code == 200
-        assert lamar_data['success']
-        assert lamar_data['total_fleets'] == 6
-        assert lamar_data['total_following'] == 4
-        assert lamar_data['total_followers'] == 9
-        assert len(lamar_data['following']) <= per_page
-
-        michael_url = url.format(name_to_id['Michael De Santa'])
-        michael_res = user_client.get(michael_url)
-        michael_data = json.loads(michael_res.data)
-        assert michael_res.status_code == 200
-        assert michael_data['success']
-        assert michael_data['total_fleets'] == 0
-        assert michael_data['total_following'] == 0
-        assert michael_data['total_followers'] == 6
-        assert len(michael_data['following']) <= per_page
-
-    def test_get_user_followers(self, user_client, app, name_to_id):
-        url = '/api/users/{}/followers'
-        per_page = app.config['USERS_PER_PAGE']
-
-        amanda_url = url.format(name_to_id['Amanda De Santa'])
-        amanda_res = user_client.get(amanda_url)
-        amanda_data = json.loads(amanda_res.data)
-        assert amanda_res.status_code == 200
-        assert amanda_data['success']
-        assert amanda_data['total_fleets'] == 15
-        assert amanda_data['total_following'] == 2
-        assert amanda_data['total_followers'] == 5
-        assert len(amanda_data['followers']) <= per_page
-
-        floyd_url = url.format(name_to_id['Floyd Hebert'])
-        floyd_res = user_client.get(floyd_url)
-        floyd_data = json.loads(floyd_res.data)
-        assert floyd_res.status_code == 200
-        assert floyd_data['success']
-        assert floyd_data['total_fleets'] == 0
-        assert floyd_data['total_following'] == 1
-        assert floyd_data['total_followers'] == 0
-        assert len(floyd_data['followers']) <= per_page
+        assert res.status_code == 200
+        assert data['success']
+        assert data['total_fleets'] == 7
+        assert data['total_following'] == 1
+        assert data['total_followers'] == 3
+        assert len(data['followers']) <= app.config['USERS_PER_PAGE']
 
     def test_get_newsfeed(self, user_client, app):
         res = user_client.get('/api/fleets/newsfeed')
@@ -167,10 +118,10 @@ class TestEndpoints:
 
         assert res.status_code == 200
         assert data['success']
-        assert data['total_fleets'] == 1
-        assert data['total_following'] == 3
+        assert data['total_fleets'] == 0
+        assert data['total_following'] == 2
         assert data['total_followers'] == 0
-        assert data['newsfeed_length'] == 21
+        assert data['newsfeed_length'] == 12
         assert len(data['newsfeed']) <= app.config['FLEETS_PER_PAGE']
 
     def test_404_get_user_items_user_not_found(self, user_client):
@@ -186,16 +137,16 @@ class TestEndpoints:
         assert followers_res.status_code == 404
         assert not json.loads(followers_res.data)['success']
 
-    def test_422_get_user_items_invalid_args(self, user_client):
-        fleets_res = user_client.get('/api/users/1/fleets?page=0')
+    def test_422_get_user_items_non_positive_page_args(self, user_client):
+        fleets_res = user_client.get('/api/users/2/fleets?page=0')
         assert fleets_res.status_code == 422
         assert not json.loads(fleets_res.data)['success']
 
-        following_res = user_client.get('/api/users/2/following?per_page=0')
+        following_res = user_client.get('/api/users/3/following?per_page=0')
         assert following_res.status_code == 422
         assert not json.loads(following_res.data)['success']
 
-        followers_res = user_client.get('/api/users/3/followers?page=-1')
+        followers_res = user_client.get('/api/users/4/followers?page=-1')
         assert followers_res.status_code == 422
         assert not json.loads(followers_res.data)['success']
 
@@ -203,23 +154,22 @@ class TestEndpoints:
         assert newsfeed_res.status_code == 422
         assert not json.loads(newsfeed_res.data)['success']
 
-    def test_404_get_user_items_page_out_of_range(self, user_client,
-                                                  name_to_id):
-        trevor_url = f'/api/users/{name_to_id["Trevor Philips"]}'
-        fleets_res = user_client.get(trevor_url + '/fleets?page=5')
+    def test_404_get_user_items_page_out_of_range(self, user_client, users):
+        fleets_url = f'/api/users/{users["Trevor"].id}/fleets'
+        fleets_res = user_client.get(fleets_url + '?page=10')
         assert fleets_res.status_code == 404
         assert not json.loads(fleets_res.data)['success']
 
-        michael_url = f'/api/users/{name_to_id["Michael De Santa"]}'
-        following_res = user_client.get(michael_url + '/following?page=3')
+        following_url = f'/api/users/{users["Franklin"].id}/following'
+        following_res = user_client.get(following_url + '?page=5')
         assert following_res.status_code == 404
         assert not json.loads(following_res.data)['success']
 
-        floyd_url = f'/api/users/{name_to_id["Floyd Hebert"]}'
-        followers_res = user_client.get(floyd_url + '/followers?page=3')
+        followers_url = f'/api/users/{users["Michael"].id}/followers'
+        followers_res = user_client.get(followers_url + '?page=5')
         assert followers_res.status_code == 404
         assert not json.loads(followers_res.data)['success']
 
-        newsfeed_res = user_client.get('/api/fleets/newsfeed?page=5')
+        newsfeed_res = user_client.get('/api/fleets/newsfeed?page=20')
         assert newsfeed_res.status_code == 404
         assert not json.loads(newsfeed_res.data)['success']

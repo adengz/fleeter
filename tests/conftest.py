@@ -1,16 +1,11 @@
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import csv
+from pathlib import Path
+from datetime import datetime, timedelta
 
 
-'''
-This wonderful rollback-any-committed-transaction setup 
-is fully credited to the following medium post
-https://medium.com/@vittorio.camisa/agile-database-integration-tests-with-python-sqlalchemy-and-factory-boy-6824e8fe33a1
-'''
-
-
-Session = sessionmaker()
+DATA_ROOT = Path('../data')
+CSV_FILE = 'gtav_events.csv'
 
 
 @pytest.fixture(scope='session')
@@ -24,29 +19,51 @@ def app():
 
 
 @pytest.fixture(scope='session')
-def name_to_id(app):
+def db(app):
     from fleeter import db
-    from fleeter.models import User
     db.init_app(app)
-    return {u.username: u.id for u in User.query.all()}
 
-
-@pytest.fixture(scope='session')
-def connection(app):
-    engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
-    connection = engine.connect()
-    yield connection
-    connection.close()
+    return db
 
 
 @pytest.fixture(scope='function')
-def session(connection):
-    transaction = connection.begin()
-    session = Session(bind=connection)
+def session(db):
+    db.create_all()
 
-    yield session
+    yield db.session
 
-    # Explicitly close session
-    session.close()
-    # Rollback any transactions
-    transaction.rollback()
+    # Explicitly close DB session
+    db.session.close()
+    db.drop_all()
+
+
+# Initiate test db state for every test
+@pytest.fixture(scope='function', autouse=True)
+def users(session, app):
+    from fleeter.models import User, Fleet, Follow
+    users = {}
+    for name in ['player', 'Michael', 'Franklin', 'Trevor']:
+        users[name] = User(username=name)
+    users['player'].auth0_id = app.config['USER_CLIENT_ID'] + '@clients'
+    session.add_all(users.values())
+    session.commit()
+
+    now = datetime.now()
+    fleets, follows = [], []
+    with open(DATA_ROOT / CSV_FILE) as f:
+        reader = csv.reader(f)
+        for u, event in reader:
+            user = users[u]
+            if event.startswith('follow'):
+                followee = users[event.split()[-1]]
+                follows.append(Follow(follower_id=user.id,
+                                      followee_id=followee.id,
+                                      created_at=now))
+            else:
+                fleets.append(Fleet(post=event, user=user, created_at=now))
+            now += timedelta(seconds=1)
+    session.add_all(fleets)
+    session.add_all(follows)
+    session.commit()
+
+    return users
