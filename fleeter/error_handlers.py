@@ -12,6 +12,12 @@ def bad_request(error):
                     'message': 'Bad request'}), 400
 
 
+@bp.app_errorhandler(403)
+def forbidden(error):
+    return jsonify({'success': False, 'error': 403,
+                    'message': 'Forbidden'}), 403
+
+
 @bp.app_errorhandler(404)
 def not_found(error):
     return jsonify({'success': False, 'error': 404,

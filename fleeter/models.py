@@ -86,3 +86,14 @@ class Fleet(db.Model):
         return {'id': self.id, 'post': self.post,
                 'username': self.user.username,
                 'created_at': str(self.created_at)}
+
+    def insert(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()

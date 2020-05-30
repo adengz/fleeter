@@ -62,6 +62,7 @@ def users(session, app):
             else:
                 fleets.append(Fleet(post=event, user=user, created_at=now))
             now += timedelta(seconds=1)
+    fleets.append(Fleet(post='Hola, Los Santos', user=users['player']))
     session.add_all(fleets)
     session.add_all(follows)
     session.commit()

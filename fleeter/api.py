@@ -15,10 +15,6 @@ def _get_user(auth0_id: str, raise_404: bool = True) -> User:
     return user
 
 
-def _owns(user: User, fleet: Fleet) -> bool:
-    return user == fleet.user
-
-
 def _get_paginated_user_items(user_id: int, field: str):
     user = User.query.get_or_404(user_id)
     response = user.to_dict()
@@ -65,22 +61,58 @@ def get_newsfeed(payload):
     return _get_paginated_user_items(user_id=user_id, field='newsfeed')
 
 
+def _post_or_patch_fleet(auth0_id: str, patch: bool, fleet_id: int = None):
+    user = _get_user(auth0_id)
+    if patch:
+        fleet = Fleet.query.get_or_404(fleet_id)
+        if user != fleet.user:
+            abort(403)
+    else:
+        fleet = Fleet(user=user)
+
+    data = request.get_json()
+    try:
+        fleet.post = data['post']
+        print('post' in data)
+        assert fleet.post
+    except KeyError:
+        abort(400)
+    except AssertionError:
+        abort(422)
+
+    try:
+        fleet.update() if patch else fleet.insert()
+    except:
+        abort(500)
+    return jsonify({'success': True, 'id': fleet.id})
+
+
 @bp.route('/fleets', methods=['POST'])
 @requires_auth(permission='post:fleets')
 def post_fleet(payload):
-    return 'Not implemented'
+    return _post_or_patch_fleet(payload['sub'], patch=False)
 
 
 @bp.route('/fleets/<int:fleet_id>', methods=['PATCH'])
 @requires_auth(permission='patch:fleets')
 def patch_fleet(payload, fleet_id):
-    return 'Not implemented'
+    return _post_or_patch_fleet(payload['sub'], patch=True, fleet_id=fleet_id)
 
 
 @bp.route('/fleets/<int:fleet_id>', methods=['DELETE'])
 @requires_auth(permission='delete:fleets')
 def delete_fleet(payload, fleet_id):
-    return 'Not implemented'
+    user = _get_user(payload['sub'], raise_404=False)
+    fleet = Fleet.query.get_or_404(fleet_id)
+    if user is not None and user != fleet.user:  # Neither moderator nor owner
+        abort(403)
+
+    try:
+        fleet.delete()
+    except Exception as e:
+        print(e)
+        abort(500)
+    return jsonify({'success': True, 'id': fleet_id})
 
 
 @bp.route('/follows/<int:user_id>', methods=['POST', 'DELETE'])

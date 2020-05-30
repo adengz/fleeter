@@ -2,6 +2,7 @@ import json
 import pytest
 import requests
 from fleeter.auth import AUTH0_DOMAIN, API_AUDIENCE
+from fleeter.models import Fleet
 
 
 @pytest.fixture(scope='module')
@@ -38,21 +39,40 @@ def mod_client(app):
 class TestAuth:
 
     def test_get_user_follow(self, user_client, mod_client):
-        res1 = user_client.get('/api/users/1/following')
-        assert res1.status_code == 200
+        res_following = user_client.get('/api/users/1/following')
+        assert res_following.status_code == 200
 
-        res2 = user_client.get('/api/users/1/followers')
-        assert res2.status_code == 200
-
-        res3 = mod_client.get('/api/users/2/following')
-        assert res3.status_code == 200
-
-        res4 = mod_client.get('/api/users/2/followers')
-        assert res4.status_code == 200
+        res_followers = user_client.get('/api/users/2/followers')
+        assert res_followers.status_code == 200
 
     def test_get_newsfeed(self, user_client):
         res = user_client.get('/api/fleets/newsfeed')
         assert res.status_code == 200
+
+    def test_post_fleet(self, user_client):
+        res = user_client.post('/api/fleets', json={'post': 'Fame or Shame'})
+        assert res.status_code == 200
+
+    def test_patch_fleet(self, user_client):
+        res = user_client.patch('/api/fleets/17',
+                                json={'post': 'Fame or Shame'})
+        assert res.status_code == 200
+
+    def test_delete_fleet_owner(self, user_client):
+        res = user_client.delete('/api/fleets/17')
+        assert res.status_code == 200
+
+    def test_delete_fleet_mod(self, mod_client):
+        res = mod_client.delete('/api/fleets/1')
+        assert res.status_code == 200
+
+    def test_403_patch_delete_fleet_not_owner(self, user_client):
+        patch_res = user_client.patch('/api/fleets/1',
+                                      json={'post': 'welcome to Los Santos'})
+        assert patch_res.status_code == 403
+
+        delete_res = user_client.delete('/api/fleets/1')
+        assert delete_res.status_code == 403
 
     def test_401_endpoints_require_auth_unauthed(self, client):
         code = 'authorization_header_missing'
@@ -69,12 +89,31 @@ class TestAuth:
         assert newsfeed_res.status_code == 401
         assert json.loads(newsfeed_res.data)['code'] == code
 
+        post_fleet_res = client.post('/api/fleets',
+                                     json={'post': 'Fame or Shame'})
+        assert post_fleet_res.status_code == 401
+
+        patch_fleet_res = client.patch('/api/fleets/17',
+                                       json={'post': 'Fame or Shame'})
+        assert patch_fleet_res.status_code == 401
+
+        delete_fleet_res = client.delete('/api/fleets/17')
+        assert delete_fleet_res.status_code == 401
+
     def test_403_user_endpoints_mod(self, mod_client):
         code = 'forbidden'
 
         newsfeed_res = mod_client.get('/api/fleets/newsfeed')
         assert newsfeed_res.status_code == 403
         assert json.loads(newsfeed_res.data)['code'] == code
+
+        post_fleet_res = mod_client.post('/api/fleets',
+                                         json={'post': 'Fame or Shame'})
+        assert post_fleet_res.status_code == 403
+
+        patch_fleet_res = mod_client.patch('/api/fleets/17',
+                                           json={'post': 'Fame or Shame'})
+        assert patch_fleet_res.status_code == 403
 
 
 class TestEndpoints:
@@ -118,10 +157,10 @@ class TestEndpoints:
 
         assert res.status_code == 200
         assert data['success']
-        assert data['total_fleets'] == 0
+        assert data['total_fleets'] == 1
         assert data['total_following'] == 2
         assert data['total_followers'] == 0
-        assert data['newsfeed_length'] == 12
+        assert data['newsfeed_length'] == 13
         assert len(data['newsfeed']) <= app.config['FLEETS_PER_PAGE']
 
     def test_404_get_user_items_user_not_found(self, user_client):
@@ -173,3 +212,61 @@ class TestEndpoints:
         newsfeed_res = user_client.get('/api/fleets/newsfeed?page=20')
         assert newsfeed_res.status_code == 404
         assert not json.loads(newsfeed_res.data)['success']
+
+    def test_post_fleet(self, user_client):
+        res = user_client.post('/api/fleets', json={'post': 'Fame or Shame'})
+        data = json.loads(res.data)
+        fleet = Fleet.query.get(data['id'])
+        assert res.status_code == 200
+        assert data['success']
+        assert fleet.post == 'Fame or Shame'
+
+    def test_patch_fleet(self, user_client):
+        res = user_client.patch('/api/fleets/17',
+                                json={'post': 'Fame or Shame'})
+        data = json.loads(res.data)
+        fleet = Fleet.query.get(17)
+        assert res.status_code == 200
+        assert data['success']
+        assert data['id'] == 17
+        assert fleet.post == 'Fame or Shame'
+
+    def test_delete_fleet(self, user_client):
+        res = user_client.delete('/api/fleets/17')
+        data = json.loads(res.data)
+        fleet = Fleet.query.get(17)
+        assert res.status_code == 200
+        assert data['success']
+        assert data['id'] == 17
+        assert fleet is None
+
+    def test_404_patch_delete_fleet_not_exist(self, user_client):
+        patch_res = user_client.patch('/api/fleets/100',
+                                      json={'post': 'The Big Score'})
+        assert patch_res.status_code == 404
+        assert not json.loads(patch_res.data)['success']
+
+        delete_res = user_client.delete('/api/fleets/100')
+        assert delete_res.status_code == 404
+        assert not json.loads(delete_res.data)['success']
+
+    def test_400_post_fleet_no_post_arg(self, user_client):
+        res = user_client.post('/api/fleets',
+                               json={'fleet': 'Fame or Shame'})
+        assert res.status_code == 400
+        assert not json.loads(res.data)['success']
+
+    def test_400_patch_fleet_no_post_arg(self, user_client):
+        res = user_client.patch('/api/fleets/17',
+                                json={'fleet': 'Fame or Shame'})
+        assert res.status_code == 400
+        assert not json.loads(res.data)['success']
+
+    def test_422_post_patch_fleet_empty_post(self, user_client):
+        post_res = user_client.post('/api/fleets', json={'post': ''})
+        assert post_res.status_code == 422
+        assert not json.loads(post_res.data)['success']
+
+        patch_res = user_client.patch('/api/fleets/17', json={'post': ''})
+        assert patch_res.status_code == 422
+        assert not json.loads(patch_res.data)['success']
