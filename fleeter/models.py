@@ -68,6 +68,17 @@ class User(db.Model):
         if self.is_following(other):
             self.following.remove(other)
 
+    def insert(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
 
 class Fleet(db.Model):
     __tablename__ = 'fleets'

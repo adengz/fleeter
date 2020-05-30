@@ -117,10 +117,27 @@ def delete_fleet(payload, fleet_id):
 @bp.route('/follows/<int:user_id>', methods=['POST', 'DELETE'])
 @requires_auth(permission='follow/unfollow')
 def follow_or_unfollow(payload, user_id):
-    return 'Not implemented'
+    user = _get_user(payload['sub'])
+    other = User.query.get_or_404(user_id)
+
+    try:
+        action = 'follow' if request.method == 'POST' else 'unfollow'
+        getattr(user, action)(other)
+        user.update()
+    except AssertionError:
+        abort(422)
+    except:
+        abort(500)
+    return jsonify({'success': True, 'id': user_id})
 
 
 @bp.route('/users/<int:user_id>', methods=['DELETE'])
 @requires_auth(permission='delete:users')
 def delete_user(payload, user_id):
-    return 'Not implemented'
+    user = User.query.get_or_404(user_id)
+
+    try:
+        user.delete()
+    except:
+        abort(500)
+    return jsonify({'success': True, 'id': user_id})

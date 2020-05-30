@@ -2,7 +2,7 @@ import json
 import pytest
 import requests
 from fleeter.auth import AUTH0_DOMAIN, API_AUDIENCE
-from fleeter.models import Fleet
+from fleeter.models import Fleet, Follow, User
 
 
 @pytest.fixture(scope='module')
@@ -52,7 +52,7 @@ class TestGetUserFleets:
         assert len(data['fleets']) <= app.config['FLEETS_PER_PAGE']
 
     def test_404_user_not_exist(self, client):
-        res = client.get('/api/users/100/fleets')
+        res = client.get('/api/users/10/fleets')
         assert res.status_code == 404
 
     def test_422_non_positive_page_args(self, client):
@@ -88,7 +88,7 @@ class TestGetUserFollowing:
         assert len(data['following']) <= app.config['USERS_PER_PAGE']
 
     def test_404_user_not_exist(self, user_client):
-        res = user_client.get('/api/users/100/following')
+        res = user_client.get('/api/users/10/following')
         assert res.status_code == 404
 
     def test_422_non_positive_page_args(self, user_client):
@@ -124,7 +124,7 @@ class TestGetUserFollowers:
         assert len(data['followers']) <= app.config['USERS_PER_PAGE']
 
     def test_404_user_not_exist(self, user_client):
-        res = user_client.get('/api/users/100/followers')
+        res = user_client.get('/api/users/10/followers')
         assert res.status_code == 404
 
     def test_422_non_positive_page_args(self, user_client):
@@ -283,4 +283,98 @@ class TestDeleteFleet:
 
     def test_404_fleet_not_exist(self, user_client):
         res = user_client.delete('/api/fleets/100')
+        assert res.status_code == 404
+
+
+class TestFollow:
+
+    url = '/api/follows/3'
+
+    def test_401_unauthorized(self, client):
+        res = client.post(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_403_moderator(self, mod_client):
+        res = mod_client.post(self.url)
+        assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
+
+    def test_follow(self, user_client):
+        res = user_client.post(self.url)
+        data = json.loads(res.data)
+        follow = Follow.query.filter_by(follower_id=1,
+                                        followee_id=3).one_or_none()
+        assert res.status_code == 200
+        assert data['success']
+        assert data['id'] == 3
+        assert follow is not None
+
+    def test_404_followee_not_exist(self, user_client):
+        res = user_client.post('/api/follows/10')
+        assert res.status_code == 404
+
+    def test_422_follow_self(self, user_client):
+        res = user_client.post('/api/follows/1')
+        assert res.status_code == 422
+
+
+class TestUnfollow:
+
+    url = '/api/follows/2'
+
+    def test_401_unauthorized(self, client):
+        res = client.delete(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_403_moderator(self, mod_client):
+        res = mod_client.delete(self.url)
+        assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
+
+    def test_unfollow(self, user_client):
+        res = user_client.delete(self.url)
+        data = json.loads(res.data)
+        follow = Follow.query.filter_by(follower_id=1,
+                                        followee_id=2).one_or_none()
+        assert res.status_code == 200
+        assert data['success']
+        assert data['id'] == 2
+        assert follow is None
+
+    def test_404_followee_not_exist(self, user_client):
+        res = user_client.delete('/api/follows/10')
+        assert res.status_code == 404
+
+    def test_422_unfollow_self(self, user_client):
+        res = user_client.delete('/api/follows/1')
+        assert res.status_code == 422
+
+
+class TestDeleteUser:
+
+    url = '/api/users/4'
+
+    def test_401_unauthorized(self, client):
+        res = client.delete(self.url)
+        assert res.status_code == 401
+        assert json.loads(res.data)['code'] == 'authorization_header_missing'
+
+    def test_403_user(self, user_client):
+        res = user_client.delete(self.url)
+        assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
+
+    def test_delete_user(self, mod_client):
+        res = mod_client.delete(self.url)
+        data = json.loads(res.data)
+        user = User.query.get(4)
+        assert res.status_code == 200
+        assert data['success']
+        assert data['id'] == 4
+        assert user is None
+
+    def test_404_user_not_exist(self, mod_client):
+        res = mod_client.delete('/api/users/10')
         assert res.status_code == 404
