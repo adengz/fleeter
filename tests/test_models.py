@@ -85,8 +85,10 @@ def test_fleet_to_dict():
     assert fleet1_dict['id'] == 11
     assert fleet1_dict['post'] == 'The Jewel Store Job'
     assert fleet1_dict['username'] == 'Michael'
+    assert 'created_at' in fleet1_dict
 
     fleet2_dict = Fleet.query.get(15).to_dict()
     assert fleet2_dict['id'] == 15
     assert fleet2_dict['post'] == 'Crystal Maze'
     assert fleet2_dict['username'] == 'Trevor'
+    assert 'created_at' in fleet2_dict

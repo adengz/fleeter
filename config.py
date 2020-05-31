@@ -1,8 +1,5 @@
 import os
 
-LOCAL_DB_CONN = 'localhost:5432'
-TEST_DB_NAME = 'fleeter_test'
-
 
 class Config(object):
     DEBUG = False
@@ -15,7 +12,7 @@ class Config(object):
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = f'postgresql://{LOCAL_DB_CONN}/{TEST_DB_NAME}'
+    SQLALCHEMY_DATABASE_URI = os.environ['TEST_DATABASE_URL']
     # Used for getting access jwt for testing
     USER_CLIENT_ID = '1cR4ZOIFhQ2218VYQ0L5Vdc9z7LRwpz2'
     USER_CLIENT_SECRET = 'lHPfxJDcT6HynlLVUQ-SfYFhcTmPgY_9AxlCNQy88qm5KwGSMrc-X9DEqlYpJ_8M'
