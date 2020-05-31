@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -28,5 +28,9 @@ def create_app(config='config.Config'):
 
     from fleeter.api import bp as api_bp
     app.register_blueprint(api_bp)
+
+    @app.route('/')
+    def index():
+        return redirect(url_for('api.index'))
 
     return app

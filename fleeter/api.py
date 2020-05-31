@@ -8,6 +8,12 @@ from fleeter.auth import requires_auth
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 
+@bp.route('/', methods=['GET'])
+def index():
+    return jsonify({'success': True,
+                    'message': 'Welcome! You just discovered fleeter.'})
+
+
 def _get_user(auth0_id: str, raise_404: bool = True) -> User:
     user = User.query.filter_by(auth0_id=auth0_id).one_or_none()
     if user is None and raise_404:
