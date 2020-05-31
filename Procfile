@@ -1,1 +1,1 @@
-gunicorn "fleeter:create_app()"
+web: gunicorn "fleeter:create_app()"
