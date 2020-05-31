@@ -120,9 +120,10 @@ Two roles require authorization:
 	- `int per_page`: Number of fleets per page, default to 10
 - Request body: None.
 - Raises: 
+	- 404: User with `user_id` does not exist.
 	- 422: Non positive `page` or `per_page`.
-	- 404: No items found for a large `page`.
-- Returns: User information (`"id"`, `"username"`, `"total_fleets"`, `"total_following"`, `"total_followers"`) and paginated `"fleets"`.
+	- 404: No items found for a large (> 1) `page`.
+- Returns: User information (`id`, `username`, `total_fleets`, `total_following`, `total_followers`) and paginated `fleets`.
 - Response body: 
 
 ```
@@ -156,9 +157,10 @@ Two roles require authorization:
 	- `int per_page`: Number of fleets per page, default to 10
 - Request body: None.
 - Raises: 
+	- 404: User with `user_id` does not exist.
 	- 422: Non positive `page` or `per_page`.
-	- 404: No items found for a large `page`.
-- Returns: User information (`"id"`, `"username"`, `"total_fleets"`, `"total_following"`, `"total_followers"`) and paginated `"following"`.
+	- 404: No items found for a large (> 1) `page`.
+- Returns: User information (`id`, `username`, `total_fleets`, `total_following`, `total_followers`) and paginated `following`.
 - Response body: 
 
 ```
@@ -186,9 +188,10 @@ Two roles require authorization:
 	- `int per_page`: Number of fleets per page, default to 10
 - Request body: None.
 - Raises: 
+	- 404: User with `user_id` does not exist.
 	- 422: Non positive `page` or `per_page`.
-	- 404: No items found for a large `page`.
-- Returns: User information (`"id"`, `"username"`, `"total_fleets"`, `"total_following"`, `"total_followers"`) and paginated `"followers"`.
+	- 404: No items found for a large (> 1) `page`.
+- Returns: User information (`id`, `username`, `total_fleets`, `total_following`, `total_followers`) and paginated `followers`.
 - Response body: 
 
 ```
@@ -225,8 +228,8 @@ Two roles require authorization:
 - Request body: None.
 - Raises: 
 	- 422: Non positive `page` or `per_page`.
-	- 404: No items found for a large `page`.
-- Returns: Current user information (`"id"`, `"username"`, `"total_fleets"`, `"total_following"`, `"total_followers"`) and paginated `"newsfeed"`.
+	- 404: No items found for a large (> 1) `page`.
+- Returns: User information (`id`, `username`, `total_fleets`, `total_following`, `total_followers`) and paginated `newsfeed`.
 - Response body: 
 
 ```
@@ -261,7 +264,7 @@ Two roles require authorization:
 - Raises: 
 	- 400: Key `"post"` not in request body.
 	- 422: Value of key `"post"` is empty (`""`) or None.
-- Returns: `"id"` of newly created fleet. 
+- Returns: `id` of newly created fleet. 
 - Response body: `"id": fleet_id`
 
 #### `PATCH "/api/fleets/<int:fleet_id>"`
