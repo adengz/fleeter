@@ -1,1 +1,1 @@
-gunicorn "fleeter:create_app()"
+gunicorn "fleeter:create_app('config.ProductionConfig')"
