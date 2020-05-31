@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, request, current_app, abort, jsonify
 from fleeter.models import User, Fleet
-from fleeter.auth import requires_auth
+from fleeter.auth import requires_auth, AuthError
 
 
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -72,7 +72,10 @@ def _post_or_patch_fleet(auth0_id: str, patch: bool, fleet_id: int = None):
     if patch:
         fleet = Fleet.query.get_or_404(fleet_id)
         if user != fleet.user:
-            abort(403)
+            raise AuthError({
+                'code': 'forbidden',
+                'description': 'Access forbidden.'
+            }, 403)
     else:
         fleet = Fleet(user=user)
 
@@ -111,7 +114,10 @@ def delete_fleet(payload, fleet_id):
     user = _get_user(payload['sub'], raise_404=False)
     fleet = Fleet.query.get_or_404(fleet_id)
     if user is not None and user != fleet.user:  # Neither moderator nor owner
-        abort(403)
+        raise AuthError({
+            'code': 'forbidden',
+            'description': 'Access forbidden.'
+        }, 403)
 
     try:
         fleet.delete()

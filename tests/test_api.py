@@ -226,6 +226,7 @@ class TestPatchFleet:
         res = user_client.patch('/api/fleets/1',
                                 json={'post': 'welcome to Los Santos'})
         assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
 
     def test_patch_fleet(self, user_client):
         res = user_client.patch(self.url, json={'post': 'Fame or Shame'})
@@ -262,6 +263,7 @@ class TestDeleteFleet:
     def test_403_neither_owner_nor_moderator(self, user_client):
         res = user_client.delete('/api/fleets/1')
         assert res.status_code == 403
+        assert json.loads(res.data)['code'] == 'forbidden'
 
     def test_delete_fleet_as_owner(self, user_client):
         res = user_client.delete(self.url)
