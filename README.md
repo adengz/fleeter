@@ -78,7 +78,11 @@ Or to run tests for models and api separately, execute:
 
 ## Deployment on Heroku
 
-The API is now live on <https://fleeeterrr.herokuapp.com>
+The API is now live on <https://fleeeterrr.herokuapp.com>, with the database hosting the same mock data for integration tests. Try hit a public endpoint <https://fleeeterrr.herokuapp.com/api/users/1/fleets>.
+
+_For project reviewer_
+
+_To test other endpoints requiring authorization, login with the provided credential from the home page (using incognito mode since no logout option is available). Copy the JWT from the response URL. This is dumb as hell and why we need a frontend._
 
 ## API Documentation
 
