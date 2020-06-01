@@ -1,3 +1,4 @@
+import os
 import json
 from flask import request
 from functools import wraps
@@ -9,9 +10,9 @@ Implementations in this module are largely based on the source code in the follo
 https://github.com/udacity/FSND/blob/fd2bd57c3800cfaf3f61e7fcccf1b516a53dfe58/BasicFlaskAuth/app.py
 '''
 
-AUTH0_DOMAIN = 'fleeter.auth0.com'
-ALGORITHMS = ['RS256']
-API_AUDIENCE = 'fleeter'
+AUTH0_DOMAIN = os.environ['AUTH0_DOMAIN']
+ALGORITHMS = json.loads(os.environ['ALGORITHMS'])
+API_AUDIENCE = os.environ['API_AUDIENCE']
 
 
 class AuthError(Exception):

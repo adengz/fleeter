@@ -1,9 +1,11 @@
+import os
 import pytest
 import csv
 from pathlib import Path
 from datetime import datetime, timedelta
 
 
+USER_CLIENT_ID = os.environ['USER_CLIENT_ID']
 TEST_ROOT = Path(__file__).parent
 DATA_ROOT = Path(TEST_ROOT / '../data')
 CSV_FILE = 'gtav_events.csv'
@@ -45,7 +47,7 @@ def users(session, app):
     users = {}
     for name in ['player', 'Michael', 'Franklin', 'Trevor']:
         users[name] = User(username=name)
-    users['player'].auth0_id = app.config['USER_CLIENT_ID'] + '@clients'
+    users['player'].auth0_id = USER_CLIENT_ID + '@clients'
     session.add_all(users.values())
     session.commit()
 

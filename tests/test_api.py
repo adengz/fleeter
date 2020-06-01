@@ -1,8 +1,15 @@
+import os
 import json
 import pytest
 import requests
 from fleeter.auth import AUTH0_DOMAIN, API_AUDIENCE
 from fleeter.models import Fleet, Follow, User
+
+
+USER_CLIENT_ID = os.environ['USER_CLIENT_ID']
+USER_CLIENT_SECRET = os.environ['USER_CLIENT_SECRET']
+MOD_CLIENT_ID = os.environ['MOD_CLIENT_ID']
+MOD_CLIENT_SECRET = os.environ['MOD_CLIENT_SECRET']
 
 
 @pytest.fixture(scope='module')
@@ -13,8 +20,7 @@ def client(app):
 @pytest.fixture(scope='module')
 def user_client(app):
     url = f'https://{AUTH0_DOMAIN}/oauth/token'
-    data = {'client_id': app.config['USER_CLIENT_ID'],
-            'client_secret': app.config['USER_CLIENT_SECRET'],
+    data = {'client_id': USER_CLIENT_ID, 'client_secret': USER_CLIENT_SECRET,
             'audience': API_AUDIENCE, 'grant_type': 'client_credentials'}
     r = requests.post(url, json=data)
     user_token = r.json()['access_token']
@@ -26,8 +32,7 @@ def user_client(app):
 @pytest.fixture(scope='module')
 def mod_client(app):
     url = f'https://{AUTH0_DOMAIN}/oauth/token'
-    data = {'client_id': app.config['MOD_CLIENT_ID'],
-            'client_secret': app.config['MOD_CLIENT_SECRET'],
+    data = {'client_id': MOD_CLIENT_ID, 'client_secret': MOD_CLIENT_SECRET,
             'audience': API_AUDIENCE, 'grant_type': 'client_credentials'}
     r = requests.post(url, json=data)
     mod_token = r.json()['access_token']

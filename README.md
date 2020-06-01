@@ -18,7 +18,7 @@ Working within a virtual environment is recommended whenever using Python for pr
 Once you have your virtual environment setup and running, install dependencies by running:
 
 ```bash
-pip install -r requirements.txt
+% pip install -r requirements.txt
 ```
 
 This will install all of the required packages within the `requirements.txt` file.
@@ -35,36 +35,45 @@ This will install all of the required packages within the `requirements.txt` fil
 
 ## Running the server
 
+With a PostgreSQL server running locally, create a new db `fleeter` by running 
+
+```
+% dropdb fleeter
+% createdb fleeter
+```
+
 From within the root directory first ensure you are working using your created virtual environment.
 
 To run the server, execute:
 
-```bash
-export FLASK_APP=fleeter
-flask run
 ```
-
-Setting the `FLASK_APP` variable to `fleeter` directs flask to use the `fleeter` directory and the `__init__.py` file to find the application. 
+% source setup.sh
+% flask db upgrade  # must not skip for the first time
+% flask run
+```
 
 ## Testing
 
-With a PostgreSQL server running locally, create a new testing db, and export the connection as `TEST_DATABASE_URL` by running
+With a PostgreSQL server running locally, create a new testing db `fleeter_test` by running
 
 ```
-export TEST_DATABASE_URL=<YOUR_TESTING_DB_CONNECTION>
+% dropdb fleeter_test
+% createdb fleeter_test
 ```
 
-After navigating to the `tests` directory, to run all the tests, run
+From within the root directory first ensure you are working using your created virtual environment.
+
+To run all the tests, execute:
 
 ```
-pytest
+% pytest
 ```
 
-Or to run tests for models and api separately, run
+Or to run tests for models and api separately, execute:
 
 ```
-pytest test_models.py
-pytest test_api.py
+% pytest tests/test_models.py
+% pytest tests/test_api.py
 ```
 
 ## Deployment on Heroku
