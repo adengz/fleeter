@@ -6,7 +6,8 @@ from jose import jwt
 from urllib.request import urlopen
 
 '''
-Implementations in this module are largely based on the source code in the following URL
+Implementations in this module are largely based on
+the source code in the following URL
 https://github.com/udacity/FSND/blob/fd2bd57c3800cfaf3f61e7fcccf1b516a53dfe58/BasicFlaskAuth/app.py
 '''
 
@@ -93,7 +94,8 @@ def verify_decode_jwt(token):
         except jwt.JWTClaimsError:
             raise AuthError({
                 'code': 'invalid_claims',
-                'description': 'Incorrect claims. Please, check the audience and issuer.'
+                'description': 'Incorrect claims. '
+                               'Please, check the audience and issuer.'
             }, 401)
         except Exception:
             raise AuthError({

@@ -11,7 +11,9 @@ bp = Blueprint('api', __name__, url_prefix='/api')
 @bp.route('/', methods=['GET'])
 def index():
     return jsonify({'success': True,
-                    'message': 'Welcome! You just discovered fleeter.'})
+                    'message': 'Welcome! You just logged in. '
+                               'Time to hit some endpoints '
+                               'requiring authorization.'})
 
 
 def _get_user(auth0_id: str, raise_404: bool = True) -> User:
