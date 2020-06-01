@@ -66,12 +66,14 @@ From within the root directory first ensure you are working using your created v
 To run all the tests, execute:
 
 ```
+% source setup.sh
 % pytest
 ```
 
 Or to run tests for models and api separately, execute:
 
 ```
+% source setup.sh
 % pytest tests/test_models.py
 % pytest tests/test_api.py
 ```
