@@ -11,7 +11,7 @@ https://github.com/udacity/FSND/blob/fd2bd57c3800cfaf3f61e7fcccf1b516a53dfe58/Ba
 '''
 
 AUTH0_DOMAIN = os.environ['AUTH0_DOMAIN']
-ALGORITHMS = json.loads(os.environ['ALGORITHMS'])
+ALGORITHMS = [os.environ['ALGORITHM']]
 API_AUDIENCE = os.environ['API_AUDIENCE']
 
 
